@@ -259,3 +259,19 @@ Valide : local via contracts          Valide : introspection auth-service
 Usages : browser → module API         Usages : module → platform-api
          (scopes music_ai:*)                   (catalogue, jobs, warmup)
 ```
+
+## Skills d’équipe (Cursor)
+
+Pour démarrer ou faire évoluer un module, utiliser les workflows dans
+[`.cursor/skills/`](../.cursor/skills/README.md) (liste aussi dans le
+[README org](../README.md#skills-déquipe)) :
+
+| Besoin | Skill |
+|---|---|
+| Nouveau module New Age | `/new-module` |
+| Projet hors New Age | `/new-project` |
+| MAJ du contrat YAML | `/update-module-contract` |
+| Review drift YAML ↔ code | `/review-module` |
+
+Les règles d’architecture (`docs/rules/`) restent la référence quotidienne ; les skills
+ne les remplacent pas.

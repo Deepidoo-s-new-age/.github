@@ -21,6 +21,7 @@ Ne pas recréer de second dossier de règles ni de `RULE-GLOBAL-*.md` à la raci
 |---|---|
 | [Architecture](ARCHITECTURE.md) | Ordre des services, fondations, flux d’authentification |
 | [Catalogue des règles](RULES-CATALOG.md) | Nom, contenu, mode d’application et globs de chaque règle |
+| [Skills d’équipe](../.cursor/skills/README.md) | `/new-module`, `/new-project`, `/update-module-contract`, `/review-module` |
 | [Validation CI future](CI-CONTRACT-VALIDATION.md) | Contrôles envisagés sur contrats, routes et scopes |
 | [Template de contrat module](https://github.com/Deepidoo-s-new-age/deepidoo-contracts/blob/main/docs/module-contract.TEMPLATE.yaml) | Forme YAML partagée (dans `contracts`) |
 | [Contrat Play Music AI](https://github.com/Deepidoo/play_music_ai/blob/main/docs/module.yaml) | Contrat rempli, dans le dépôt du module |
@@ -59,3 +60,15 @@ Dépôts : [deepidoo-contracts](https://github.com/Deepidoo-s-new-age/deepidoo-c
 5. Rester dans le module nommé, sauf changement explicite d’un contrat partagé.
 
 L’inventaire détaillé est dans [RULES-CATALOG.md](RULES-CATALOG.md).
+
+## Skills (workflows)
+
+Les skills ne remplacent pas les règles. Voir [`.cursor/skills/`](../.cursor/skills/README.md)
+et le [README org § Skills](../README.md#skills-déquipe).
+
+| Besoin | Commande |
+|---|---|
+| Nouveau module New Age | `/new-module` |
+| Projet hors écosystème | `/new-project` |
+| Changement de routes / scopes | `/update-module-contract` |
+| Audit avant merge | `/review-module` |
