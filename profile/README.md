@@ -61,6 +61,6 @@ Clones locaux habituels : siblings sous un même dossier workspace, **sans** en 
 |---|---|
 | [Architecture détaillée](https://github.com/Deepidoo-s-new-age/.github/blob/main/docs/ARCHITECTURE.md) | Fondations, flux d’authentification user et M2M, arborescences, diagrammes |
 | [Team rules](https://github.com/Deepidoo-s-new-age/.github/blob/main/docs/TEAM-RULES.md) | Cadre appliqué aux devs et aux agents — règles dans `docs/rules/` |
-| [Skills](https://github.com/Deepidoo-s-new-age/.github/tree/main/.cursor/skills) | Workflows agents : new-module, new-project, … |
+| [Skills](https://github.com/Deepidoo-s-new-age/.github/blob/main/README.md#skills-déquipe) | `/new-module`, `/new-project`, `/update-module-contract`, `/review-module` |
 | [Catalogue des règles](https://github.com/Deepidoo-s-new-age/.github/blob/main/docs/RULES-CATALOG.md) | Chaque règle : contenu, portée, écarts assumés |
 | [Validation CI future](https://github.com/Deepidoo-s-new-age/.github/blob/main/docs/CI-CONTRACT-VALIDATION.md) | Contrôles envisagés sur contrats, routes et scopes |
