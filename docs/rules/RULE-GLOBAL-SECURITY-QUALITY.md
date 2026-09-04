@@ -1,0 +1,19 @@
+# Rule name: Security and delivery baseline
+
+Application: always.  
+File patterns: all files and repositories.
+
+## Rule
+
+- Never commit secrets, credentials, tokens, dumps, private keys, kubeconfigs or production data.
+- Secrets come from environment variables or the deployment secret store; example values must be inert.
+- Do not log authorization headers, JWTs, passwords, client secrets or personal data.
+- Enforce tenant/organisation isolation in repositories and services, not only in UI filters.
+- Validate file paths, uploads, URLs and external payloads at trust boundaries.
+- Pin production runtime images and dependencies; do not use floating `latest` for stateful infrastructure.
+- Every behavior change needs tests at the lowest useful layer; authorization changes need allowed and forbidden cases.
+- Run the repository's documented formatter, linter, type checker and relevant tests before claiming completion.
+- Do not silently weaken tests, auth checks, type safety, pagination or error handling to make a change pass.
+- Keep files focused; split responsibilities instead of creating generic `utils`, `helpers` or `misc` modules.
+- Report current technical debt separately from the implemented target. Never fabricate migration completion.
+- Do not modify deployment, shared contracts, permission grants or production data without naming the blast radius first.

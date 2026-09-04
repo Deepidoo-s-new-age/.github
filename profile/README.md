@@ -54,3 +54,12 @@ Une nouvelle route sans mise à jour de ce YAML n’est pas complète.
 4. Secrets uniquement en variables d’environnement.
 
 Clones locaux habituels : siblings sous un même dossier workspace, **sans** en faire un seul dépôt Git.
+
+## Pour aller plus loin
+
+| Document | Contenu |
+|---|---|
+| [Architecture détaillée](https://github.com/Deepidoo-s-new-age/.github/blob/main/docs/ARCHITECTURE.md) | Fondations, flux d’authentification user et M2M, arborescences, diagrammes |
+| [Team rules](https://github.com/Deepidoo-s-new-age/.github/blob/main/docs/TEAM-RULES.md) | Cadre appliqué aux devs et aux agents (à titre indicatif) |
+| [Catalogue des règles](https://github.com/Deepidoo-s-new-age/.github/blob/main/docs/RULES-CATALOG.md) | Chaque règle : contenu, portée, écarts assumés |
+| [Validation CI future](https://github.com/Deepidoo-s-new-age/.github/blob/main/docs/CI-CONTRACT-VALIDATION.md) | Contrôles envisagés sur contrats, routes et scopes |

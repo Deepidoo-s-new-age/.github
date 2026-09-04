@@ -1,0 +1,26 @@
+# Rule name: Business module contract
+
+Application: always.  
+File patterns: all files and repositories.
+
+## Rule
+
+- A module is an independently deployable business capability, not a frontend feature folder.
+- The filled contract is versioned **in the module repository**: `{module-repo}/docs/module.yaml`.
+- The shared empty shape lives in **`contracts`**: `docs/module-contract.TEMPLATE.yaml`. Copy it into a new module; never store a filled module contract in `contracts`.
+- The local workspace folder holding the clones is not a Git repository. Do not put the canonical contract there.
+- Read `{module-repo}/docs/module.yaml` before editing that module or integrating it into `play`, `auth-service`, `platform-api` or Helm.
+- The contract answers: what the module is for, who uses it, which UI and API groups exist, who may call them, which files to edit, which data it owns, and what it must not touch.
+- Every backend `route_groups` entry MUST declare `prefix`, `purpose` (one or two sentences), `actors`, `access`, and `source`. Add `downstream` when the group calls another service.
+- Every frontend `routes` entry MUST declare `path`, `purpose` (one or two sentences), `actors`, `api_groups`, and `source`.
+- `purpose` describes the job, not the HTTP verbs. Endpoint methods, bodies and errors live in OpenAPI / FastAPI, not in this YAML.
+- Keep route ownership exclusive: one route group has one owning service.
+- Keep data ownership exclusive: one aggregate has one owning service; other services use its API.
+- Module-specific schemas stay in the module. Only genuinely cross-service stable contracts move to `contracts`.
+- A module frontend under `frontend-web/` is the module's own production client: the UI end customers will use. Bring it to production quality rather than treating it as a throwaway prototype.
+- A module frontend consumes its module API and does not duplicate backend business rules or authorization decisions.
+- `play/packages/playdoo` is the frontend of the `play` client only. Do not treat it as the mandatory integration shell for every module.
+- When adding or changing a route, purpose, scope, dependency or owned aggregate, update `{module-repo}/docs/module.yaml` in the same change.
+- Describe both `current_state` and `target_state` when migration is incomplete. Do not present a target as already implemented.
+- Do not add undocumented cross-module calls, hidden environment-variable coupling or duplicate route groups.
+- If a group is mixed or currently unprotected, say so in `access` — never invent a stricter policy than the code.
