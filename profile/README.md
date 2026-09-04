@@ -1,6 +1,6 @@
 # Bienvenue chez New Age
 
-Play v3 n’est **pas un monorepo**. C’est un ensemble de dépôts Git autonomes : chacun a son cycle de version, ses tests et son déploiement.
+New Age n’est **pas un monorepo**. C’est un ensemble de dépôts Git autonomes : chacun a son cycle de version, ses tests et son déploiement.
 
 Ce README est la page d’accueil de l’organisation [Deepidoo-s-new-age](https://github.com/Deepidoo-s-new-age).
 
