@@ -14,6 +14,7 @@ Les skills **orchestrent** un workflow ; elles ne remplacent pas les règles.
 | [new-project](new-project/SKILL.md) | `/new-project` | Projet **autonome** hors New Age → `project-context` + README (redirige vers new-module si New Age) |
 | [update-module-contract](update-module-contract/SKILL.md) | `/update-module-contract` | MAJ `docs/module.yaml` après changement de surface |
 | [review-module](review-module/SKILL.md) | `/review-module` | Review drift contrat ↔ code |
+| [pr-automation](pr-automation/SKILL.md) | `/pr-automation` | PR auto : règles → YAML → review → Talkspirit |
 
 ## Installation locale
 
@@ -30,4 +31,5 @@ Besoin New Age (module)  →  new-module
 Projet hors écosystème   →  new-project
 Surface déjà existante   →  update-module-contract
 Avant merge / audit      →  review-module
+Automation PR (dashboard)→  pr-automation + docs/PR-AUTOMATION.md
 ```
