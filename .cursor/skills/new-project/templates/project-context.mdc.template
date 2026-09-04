@@ -1,0 +1,108 @@
+---
+description: Contexte métier du projet {{PROJECT_NAME}}. Toujours appliqué.
+alwaysApply: true
+---
+
+# Contexte projet — {{PROJECT_NAME}}
+
+> Généré par la skill `new-project`. Métier + périmètre technique retenu.
+> Le comment d'implémentation relève des règles du repository (`.cursor/rules/`).
+
+## Résumé
+
+{{ONE_LINE_DESCRIPTION}}
+
+**Problème adressé :** {{PROBLEM_STATEMENT}}
+
+**Utilisateurs cibles :** {{TARGET_USERS}}
+
+## Périmètre technique
+
+| Composant | Retenu | Rôle métier |
+|---|---|---|
+| API backend (`backend/`) | {{HAS_BACKEND}} | {{BACKEND_NOTES}} |
+| Player (`frontend/`) | {{HAS_PLAYER}} | {{PLAYER_NOTES}} |
+| Backoffice web (`frontend-web/`) | {{HAS_ADMIN}} | {{ADMIN_NOTES}} |
+| App mobile (`mobile-app/`) | {{HAS_MOBILE}} | {{MOBILE_NOTES}} |
+
+**Combinaison :** {{ARCHITECTURE_SUMMARY}}
+
+**Client externe (API seule) :** {{EXTERNAL_API_CONSUMER}}
+
+## Usages (métier)
+
+| Usage | Profils | Contexte |
+|---|---|---|
+| {{USAGE_1}} | {{PROFILES_1}} | {{CONTEXT_1}} |
+| {{USAGE_2}} | {{PROFILES_2}} | {{CONTEXT_2}} |
+
+## Vocabulaire métier
+
+| Terme | Définition |
+|---|---|
+| {{TERM_1}} | {{DEF_1}} |
+| {{TERM_2}} | {{DEF_2}} |
+
+## Entités et relations
+
+```
+{{ENTITY_RELATIONS}}
+```
+
+## Règles métier
+
+1. {{BUSINESS_RULE_1}}
+2. {{BUSINESS_RULE_2}}
+
+## Parcours principaux
+
+### {{WORKFLOW_1}}
+1. {{STEP_1}}
+2. {{STEP_2}}
+
+## Répartition des fonctionnalités
+
+| Fonctionnalité | Player | Web | Mobile | Externe |
+|---|---|---|---|---|
+| {{FEATURE_1}} | {{Y/N/-}} | {{Y/N/-}} | {{Y/N/-}} | {{Y/N/-}} |
+
+## Droits d'accès (métier)
+
+| Action | {{ROLE_1}} | {{ROLE_2}} | {{ROLE_3}} |
+|---|---|---|---|
+| {{ACTION_1}} | {{PERM}} | {{PERM}} | {{PERM}} |
+
+**Connexion requise :** {{LOGIN_REQUIRED}}
+
+## Fraîcheur des données
+
+{{DATA_FRESHNESS_BUSINESS_DESCRIPTION}}
+
+## Systèmes existants
+
+| Système | Échange | Si indisponible | Référent métier |
+|---|---|---|---|
+| {{SYSTEM_1}} | {{RECEIVE/SEND/BOTH}} | {{FALLBACK}} | {{CONTACT}} |
+
+## Contraintes
+
+- **Langue :** {{LANGUAGE}}
+- **Environnement d'usage :** {{USAGE_ENV}}
+- **Organisation :** {{ORG_CONSTRAINTS}}
+- **Délais / jalons :** {{DEADLINES}}
+
+## Hors périmètre
+
+Ce projet **ne fait pas** :
+
+- {{OUT_OF_SCOPE_1}}
+- {{OUT_OF_SCOPE_2}}
+
+## Notes pour l'agent
+
+- Ce fichier = **quoi**, **pour qui**, **périmètre technique retenu**.
+- Le **comment** d'implémentation = règles du repository — activer uniquement
+  celles correspondant aux dossiers présents (`backend/`, `frontend/`,
+  `frontend-web/`, `mobile-app/`).
+- {{AGENT_NOTE_1}}
+- {{AGENT_NOTE_2}}
