@@ -1,7 +1,9 @@
+---
+description: Business module contract — docs/module.yaml purpose, actors, access, source.
+alwaysApply: true
+---
 # Rule name: Business module contract
 
-Application: always.  
-File patterns: all files and repositories.
 
 ## Rule
 

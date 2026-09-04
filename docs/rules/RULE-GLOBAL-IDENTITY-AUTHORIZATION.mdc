@@ -1,7 +1,10 @@
+---
+description: Identity and authorization — JWT issuer/validation, scopes, least privilege.
+globs: **/*.{py,ts,tsx,vue,js,mjs,mts,csv,yaml,yml}
+alwaysApply: false
+---
 # Rule name: Identity and authorization ownership
 
-Application: intelligent/file-scoped.  
-File patterns: `**/*.{py,ts,tsx,vue,js,mjs,mts,csv,yaml,yml}`.
 
 ## Rule
 

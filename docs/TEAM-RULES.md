@@ -5,6 +5,16 @@ agents (Cursor) et aux développeurs sur les dépôts New Age.
 
 New Age est un ensemble de dépôts indépendants, pas une configuration de monorepo.
 
+## Source de vérité
+
+| Emplacement | Rôle |
+|---|---|
+| [`docs/rules/*.mdc`](rules/) | Texte des règles globales (unique) |
+| Workspace local `.cursor/rules/` | Symlinks vers ces `.mdc` (pas de copie) |
+| Cursor Team Admin | Optionnel — coller / synchroniser depuis ce dépôt ; pas de sync auto depuis GitHub |
+
+Ne pas recréer `RULE-GLOBAL-*.md` à la racine du workspace local.
+
 ## Documents liés
 
 | Document | Rôle |
@@ -25,12 +35,12 @@ Dépôts : [deepidoo-contracts](https://github.com/Deepidoo-s-new-age/deepidoo-c
 
 | Règle | Application Cursor | Fichiers concernés |
 |---|---|---|
-| [Ecosystem architecture](rules/RULE-GLOBAL-ECOSYSTEM-ARCHITECTURE.md) | Always | Tous les dépôts |
-| [Business module contract](rules/RULE-GLOBAL-MODULE-CONTRACT.md) | Always | Tous les dépôts |
-| [Identity and authorization](rules/RULE-GLOBAL-IDENTITY-AUTHORIZATION.md) | Intelligent/file-scoped | `**/*.{py,ts,tsx,vue,js,mjs,mts,csv,yaml,yml}` |
-| [API contracts and data boundaries](rules/RULE-GLOBAL-API-DATA-BOUNDARIES.md) | Intelligent/file-scoped | `**/*.{py,ts,tsx,vue,js,mjs,mts}` |
-| [Production frontend integration](rules/RULE-GLOBAL-FRONTEND-INTEGRATION.md) | Intelligent/file-scoped | `**/*.{ts,tsx,vue,js,scss,css}` |
-| [Security and delivery baseline](rules/RULE-GLOBAL-SECURITY-QUALITY.md) | Always | Tous les dépôts |
+| [Ecosystem architecture](rules/RULE-GLOBAL-ECOSYSTEM-ARCHITECTURE.mdc) | Always | Tous les dépôts |
+| [Business module contract](rules/RULE-GLOBAL-MODULE-CONTRACT.mdc) | Always | Tous les dépôts |
+| [Identity and authorization](rules/RULE-GLOBAL-IDENTITY-AUTHORIZATION.mdc) | Intelligent/file-scoped | `**/*.{py,ts,tsx,vue,js,mjs,mts,csv,yaml,yml}` |
+| [API contracts and data boundaries](rules/RULE-GLOBAL-API-DATA-BOUNDARIES.mdc) | Intelligent/file-scoped | `**/*.{py,ts,tsx,vue,js,mjs,mts}` |
+| [Production frontend integration](rules/RULE-GLOBAL-FRONTEND-INTEGRATION.mdc) | Intelligent/file-scoped | `**/*.{ts,tsx,vue,js,scss,css}` |
+| [Security and delivery baseline](rules/RULE-GLOBAL-SECURITY-QUALITY.mdc) | Always | Tous les dépôts |
 
 ## Précédence
 

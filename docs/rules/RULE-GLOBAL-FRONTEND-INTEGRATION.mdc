@@ -1,7 +1,10 @@
+---
+description: Production frontend integration — play/playdoo/deesplay and module frontends.
+globs: **/*.{ts,tsx,vue,js,scss,css}
+alwaysApply: false
+---
 # Rule name: Production frontend integration
 
-Application: intelligent/file-scoped.  
-File patterns: `**/*.{ts,tsx,vue,js,scss,css}`.
 
 ## Rule
 

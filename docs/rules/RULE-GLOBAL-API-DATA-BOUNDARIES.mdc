@@ -1,7 +1,10 @@
+---
+description: API contracts and data boundaries — /v1, layers, DTOs, pagination.
+globs: **/*.{py,ts,tsx,vue,js,mjs,mts}
+alwaysApply: false
+---
 # Rule name: API contracts and data boundaries
 
-Application: intelligent/file-scoped.  
-File patterns: `**/*.{py,ts,tsx,vue,js,mjs,mts}`.
 
 ## Rule
 

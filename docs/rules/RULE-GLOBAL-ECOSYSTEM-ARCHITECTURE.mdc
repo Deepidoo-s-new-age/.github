@@ -1,7 +1,9 @@
+---
+description: New Age ecosystem architecture — repos, dependency direction, boundaries.
+alwaysApply: true
+---
 # Rule name: New Age ecosystem architecture
 
-Application: always.  
-File patterns: all files and repositories.
 
 ## Rule
 

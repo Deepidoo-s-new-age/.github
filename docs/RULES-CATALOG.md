@@ -1,18 +1,18 @@
 # New Age — Catalogue des règles
 
-Publié à titre indicatif. Les règles globales sont chargées comme team rules Cursor ;
-les règles par dépôt vivent dans le dépôt concerné.
+Publié à titre indicatif. Les règles globales sont des `.mdc` sous [`docs/rules/`](rules/) ;
+en local, le workspace New Age les charge via des symlinks dans `.cursor/rules/`.
 
 ## Règles globales
 
 | Nom | Fichier | Contenu | Application | Fichiers |
 |---|---|---|---|---|
-| New Age ecosystem architecture | [`rules/RULE-GLOBAL-ECOSYSTEM-ARCHITECTURE.md`](rules/RULE-GLOBAL-ECOSYSTEM-ARCHITECTURE.md) | Rôles des dépôts, sens des dépendances, frontières service/données | Always | Tous |
-| Business module contract | [`rules/RULE-GLOBAL-MODULE-CONTRACT.md`](rules/RULE-GLOBAL-MODULE-CONTRACT.md) | YAML module : purpose, actors, access, source ; propriété des routes et données | Always | Tous |
-| Identity and authorization ownership | [`rules/RULE-GLOBAL-IDENTITY-AUTHORIZATION.md`](rules/RULE-GLOBAL-IDENTITY-AUTHORIZATION.md) | Émission/validation JWT, scopes actuels, licences vs flags, moindre privilège | Intelligent/file-scoped | `**/*.{py,ts,tsx,vue,js,mjs,mts,csv,yaml,yml}` |
-| API contracts and data boundaries | [`rules/RULE-GLOBAL-API-DATA-BOUNDARIES.md`](rules/RULE-GLOBAL-API-DATA-BOUNDARIES.md) | `/v1`, couches, propriété des DTO, pagination, invalidation de cache, clients HTTP | Intelligent/file-scoped | `**/*.{py,ts,tsx,vue,js,mjs,mts}` |
-| Production frontend integration | [`rules/RULE-GLOBAL-FRONTEND-INTEGRATION.md`](rules/RULE-GLOBAL-FRONTEND-INTEGRATION.md) | `play → playdoo → deesplay` (dans `play`), fronts de modules, migration API | Intelligent/file-scoped | `**/*.{ts,tsx,vue,js,scss,css}` |
-| Security and delivery baseline | [`rules/RULE-GLOBAL-SECURITY-QUALITY.md`](rules/RULE-GLOBAL-SECURITY-QUALITY.md) | Secrets, isolation tenant, tests, qualité, statut honnête | Always | Tous |
+| New Age ecosystem architecture | [`rules/RULE-GLOBAL-ECOSYSTEM-ARCHITECTURE.mdc`](rules/RULE-GLOBAL-ECOSYSTEM-ARCHITECTURE.mdc) | Rôles des dépôts, sens des dépendances, frontières service/données | Always | Tous |
+| Business module contract | [`rules/RULE-GLOBAL-MODULE-CONTRACT.mdc`](rules/RULE-GLOBAL-MODULE-CONTRACT.mdc) | YAML module : purpose, actors, access, source ; propriété des routes et données | Always | Tous |
+| Identity and authorization ownership | [`rules/RULE-GLOBAL-IDENTITY-AUTHORIZATION.mdc`](rules/RULE-GLOBAL-IDENTITY-AUTHORIZATION.mdc) | Émission/validation JWT, scopes actuels, licences vs flags, moindre privilège | Intelligent/file-scoped | `**/*.{py,ts,tsx,vue,js,mjs,mts,csv,yaml,yml}` |
+| API contracts and data boundaries | [`rules/RULE-GLOBAL-API-DATA-BOUNDARIES.mdc`](rules/RULE-GLOBAL-API-DATA-BOUNDARIES.mdc) | `/v1`, couches, propriété des DTO, pagination, invalidation de cache, clients HTTP | Intelligent/file-scoped | `**/*.{py,ts,tsx,vue,js,mjs,mts}` |
+| Production frontend integration | [`rules/RULE-GLOBAL-FRONTEND-INTEGRATION.mdc`](rules/RULE-GLOBAL-FRONTEND-INTEGRATION.mdc) | `play → playdoo → deesplay` (dans `play`), fronts de modules, migration API | Intelligent/file-scoped | `**/*.{ts,tsx,vue,js,scss,css}` |
+| Security and delivery baseline | [`rules/RULE-GLOBAL-SECURITY-QUALITY.mdc`](rules/RULE-GLOBAL-SECURITY-QUALITY.mdc) | Secrets, isolation tenant, tests, qualité, statut honnête | Always | Tous |
 
 ## Règles par dépôt
 

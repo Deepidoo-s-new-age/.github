@@ -1,7 +1,9 @@
+---
+description: Security and delivery baseline — secrets, tenant isolation, tests, honesty.
+alwaysApply: true
+---
 # Rule name: Security and delivery baseline
 
-Application: always.  
-File patterns: all files and repositories.
 
 ## Rule
 
