@@ -1,0 +1,28 @@
+# API contracts and data boundaries
+
+<!-- Copy this file into Cursor → Dashboard → Team Rules. -->
+<!-- Suggested name: API contracts and data boundaries -->
+<!-- Application: Apply Intelligently / file-scoped -->
+<!-- File patterns: **/*.{py,ts,tsx,vue,js,mjs,mts} -->
+
+**Cursor Admin — Application:** Apply Intelligently / file-scoped  
+**Cursor Admin — File patterns:** `**/*.{py,ts,tsx,vue,js,mjs,mts}`
+
+# Rule name: API contracts and data boundaries
+
+
+## Rule
+
+- APIs are versioned under `/v1` in New Age. Keep legacy `/api/v4` integration explicit while `play` migrates.
+- Route handlers validate transport input and delegate business logic; they do not contain SQL or cross-service orchestration.
+- Use `api → services → repositories`; outbound HTTP belongs in `clients`.
+- Repositories are the only layer that queries owned persistence.
+- Use DTOs from `deepidoo-contracts` for shared core/auth resources; module DTOs stay local.
+- Never redefine a shared DTO to avoid updating its package version.
+- Breaking shared-contract changes require a major version and consumer migration.
+- Use stable UUID references across service boundaries; never cross-database ORM relationships.
+- List endpoints must declare pagination semantics. Prefer keyset/cursor pagination for large or growing datasets.
+- Writes must define cache invalidation for every affected read model before caching is enabled.
+- External calls require explicit timeout, typed failure handling and a test double.
+- Keep generated CRUD and custom business routes distinct; use custom routes when behavior is not generic CRUD.
+- Update the owning module YAML whenever API route groups, consumers or data ownership change.

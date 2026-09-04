@@ -9,9 +9,9 @@ New Age est un ensemble de dépôts indépendants, pas une configuration de mono
 
 | Emplacement | Rôle |
 |---|---|
-| [`docs/rules/*.mdc`](rules/) | Texte des règles globales (unique) |
-| Workspace local `.cursor/rules/` | Symlinks vers ces `.mdc` (pas de copie) |
-| Cursor Team Admin | Optionnel — coller / synchroniser depuis ce dépôt ; pas de sync auto depuis GitHub |
+| [`cursor-admin/`](../cursor-admin/) | **Coller dans Cursor Team Rules** (règles générales d’équipe) |
+| [`docs/rules/*.mdc`](rules/) | Même contenu en `.mdc` pour Cursor local (project rules) |
+| Workspace local `.cursor/rules/` | Symlinks vers `docs/rules/*.mdc` (pas de copie) |
 
 Ne pas recréer `RULE-GLOBAL-*.md` à la racine du workspace local.
 
