@@ -48,3 +48,9 @@ en local, le workspace New Age les charge via des symlinks dans `.cursor/rules/`
 
 La validation automatisée envisagée est décrite dans
 [CI-CONTRACT-VALIDATION.md](CI-CONTRACT-VALIDATION.md) ; aucun contrôle CI n’est actif.
+
+## Skills d’équipe
+
+Workflows (pas des règles) : [`.cursor/skills/`](../.cursor/skills/README.md) —
+`new-module`, `new-project`, `update-module-contract`, `review-module`.
+
