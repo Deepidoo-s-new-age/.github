@@ -90,7 +90,22 @@ Login front → auth-service ; routes module protégées via
 
 Voir [play_music_ai](https://github.com/Deepidoo/play_music_ai).
 
+## Stack (langages et techno)
+
+Référence normative : [`docs/rules/RULE-GLOBAL-STACK.mdc`](rules/RULE-GLOBAL-STACK.mdc).
+
+| Couche | Défaut New Age |
+|---|---|
+| APIs / modules | Python + FastAPI |
+| Contrats partagés | `deepidoo-contracts` (Pydantic, SQLAlchemy) |
+| Données | PostgreSQL (schéma par service), Redis (jti) |
+| ACL | Casbin dans `auth-service` uniquement |
+| Play + module UI | Vue 3 + TypeScript |
+| Design system | deesplay |
+| Déploiement | Helm / containers (tags épinglés) |
+
 ## Règles d’architecture
+
 
 - Les contrats transverses **et** la validation JWT vont dans `contracts`, pas en duplication
 dans les services.

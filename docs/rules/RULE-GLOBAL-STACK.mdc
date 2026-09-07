@@ -1,0 +1,36 @@
+---
+description: New Age language and technology stack — defaults and forbidden choices.
+alwaysApply: true
+---
+# Rule name: New Age language and stack
+
+## Rule
+
+### Default stack (New Age services and modules)
+
+- **Backend APIs** (`auth-service`, `platform-api`, business modules): **Python** + **FastAPI**.
+- **Shared package**: **Python** `deepidoo-contracts` (Pydantic + SQLAlchemy base models + user JWT validation). Never reintroduce `deepidoo-schemas`.
+- **Persistence**: **PostgreSQL** with a **dedicated schema per service** (e.g. `auth`, `core`, module schemas). No cross-service SQL foreign keys.
+- **ORM / DB access**: **SQLAlchemy** (+ **asyncpg** for async services). Repositories own SQL; route handlers do not.
+- **Cache / token jti**: **Redis** where already used for allowlist/blocklist — keep the same Redis DB conventions as the service docs.
+- **Authorization policy store**: **Casbin** lives only in **auth-service**.
+- **HTTP APIs**: versioned under **`/v1`** for New Age services. Module backends may use their own prefix (e.g. `/api`) but still speak HTTP to platform/auth.
+- **Play web client** (`play`): **Vue 3** + **TypeScript**, Yarn workspace; dependency **`play` → `playdoo` → `deesplay`**.
+- **Module production UIs** (`frontend-web/`): **Vue 3** + **TypeScript** + **Vite** unless an explicit exception is approved.
+- **Design system**: **deesplay** (`Deepi*` primitives). Do not invent a parallel component library inside a module.
+- **Deploy**: container images + **Helm** / helmfile under `helm-charts` for New Age environments. Pin image tags in prod; do not use floating `latest` for stateful infra.
+
+### Do not introduce into New Age without explicit approval
+
+- New backend languages or frameworks for New Age APIs (e.g. Rails, Elixir, Nest, Go, Spring) as the default for a new service or module.
+- A second shared contracts package or rewriting `deepidoo-contracts` in another language.
+- Cross-service database sharing, shared ORM models across services, or SQL FKs between service schemas.
+- Replacing Vue/TS module or Play frontends with another SPA framework by default (React, Angular, Svelte, etc.).
+- Embedding business UI or API clients inside `deesplay`.
+
+### How to choose
+
+- Prefer the defaults above over “best tool for this ticket”.
+- Repo-local `.cursor/rules` may refine versions, lint, and folder layout — they must not contradict this stack without an explicit decision.
+- Legacy Deepidoo systems outside New Age (Rails webapp, Flutter player, etc.) are out of scope for this rule; do not copy their stack into New Age services by analogy.
+- Changing the default stack for a new module or foundation requires explicit approval before scaffolding.

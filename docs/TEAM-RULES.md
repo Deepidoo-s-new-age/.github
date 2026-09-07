@@ -37,6 +37,7 @@ Dépôts : [deepidoo-contracts](https://github.com/Deepidoo-s-new-age/deepidoo-c
 | Règle | Application Cursor | Fichiers concernés |
 |---|---|---|
 | [Ecosystem architecture](rules/RULE-GLOBAL-ECOSYSTEM-ARCHITECTURE.mdc) | Always | Tous les dépôts |
+| [Language and stack](rules/RULE-GLOBAL-STACK.mdc) | Always | Tous les dépôts |
 | [Business module contract](rules/RULE-GLOBAL-MODULE-CONTRACT.mdc) | Always | Tous les dépôts |
 | [Identity and authorization](rules/RULE-GLOBAL-IDENTITY-AUTHORIZATION.mdc) | Intelligent/file-scoped | `**/*.{py,ts,tsx,vue,js,mjs,mts,csv,yaml,yml}` |
 | [API contracts and data boundaries](rules/RULE-GLOBAL-API-DATA-BOUNDARIES.mdc) | Intelligent/file-scoped | `**/*.{py,ts,tsx,vue,js,mjs,mts}` |

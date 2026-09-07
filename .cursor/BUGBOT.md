@@ -14,6 +14,7 @@ Global architecture rules (SoT): https://github.com/Deepidoo-s-new-age/.github/t
 - Never commit secrets, tokens, dumps, kubeconfigs or production data.
 - Do not invent a stricter authorization policy than the code implements.
 - Prefer least privilege. No wildcards / admin scopes to make a request pass.
+- Prefer the New Age default stack (Python/FastAPI, Vue 3/TS, PostgreSQL, Redis, Helm). Do not introduce another backend or SPA framework without explicit approval.
 - Report current debt separately from the target. Do not claim migration completion falsely.
 - Package name is `deepidoo-contracts` — never `deepidoo-schemas` / `schemas` as the shared package.
 

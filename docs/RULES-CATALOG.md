@@ -8,6 +8,7 @@ en local, le workspace New Age les charge via des symlinks dans `.cursor/rules/`
 | Nom | Fichier | Contenu | Application | Fichiers |
 |---|---|---|---|---|
 | New Age ecosystem architecture | [`rules/RULE-GLOBAL-ECOSYSTEM-ARCHITECTURE.mdc`](rules/RULE-GLOBAL-ECOSYSTEM-ARCHITECTURE.mdc) | Rôles des dépôts, sens des dépendances, frontières service/données | Always | Tous |
+| New Age language and stack | [`rules/RULE-GLOBAL-STACK.mdc`](rules/RULE-GLOBAL-STACK.mdc) | Langages et techno par défaut (Python/FastAPI, Vue 3/TS, PG, Redis, Helm) ; interdits sans décision | Always | Tous |
 | Business module contract | [`rules/RULE-GLOBAL-MODULE-CONTRACT.mdc`](rules/RULE-GLOBAL-MODULE-CONTRACT.mdc) | YAML module : purpose, actors, access, source ; propriété des routes et données | Always | Tous |
 | Identity and authorization ownership | [`rules/RULE-GLOBAL-IDENTITY-AUTHORIZATION.mdc`](rules/RULE-GLOBAL-IDENTITY-AUTHORIZATION.mdc) | Émission/validation JWT, scopes actuels, licences vs flags, moindre privilège | Intelligent/file-scoped | `**/*.{py,ts,tsx,vue,js,mjs,mts,csv,yaml,yml}` |
 | API contracts and data boundaries | [`rules/RULE-GLOBAL-API-DATA-BOUNDARIES.mdc`](rules/RULE-GLOBAL-API-DATA-BOUNDARIES.mdc) | `/v1`, couches, propriété des DTO, pagination, invalidation de cache, clients HTTP | Intelligent/file-scoped | `**/*.{py,ts,tsx,vue,js,mjs,mts}` |
