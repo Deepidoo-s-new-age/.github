@@ -18,8 +18,22 @@ HTTP_METHODS = {"get", "post", "put", "patch", "delete"}
 REQUIRED_GROUP_FIELDS = ("purpose", "actors", "access", "source")
 OTHER_SERVICES = {"platform_api", "auth_service"}
 SKIP_PARTS = frozenset(
-    {".venv", "node_modules", ".git", "site-packages", "__pycache__", "dist", ".yarn", "tests", "test"}
+    {
+        ".venv",
+        "venv",
+        "node_modules",
+        ".git",
+        "site-packages",
+        "__pycache__",
+        "dist",
+        ".yarn",
+        "tests",
+        "test",
+        "examples",
+        "docs",
+    }
 )
+NESTED_GROUP_FIELDS = frozenset({"actors", "access"})
 
 
 def api_directories(repo: Path) -> list[Path]:
@@ -123,15 +137,17 @@ def _indent(line: str) -> int:
 def _assign_group_field(group: dict[str, object], key: str, value: str) -> None:
     if key == "prefix":
         group["prefix"] = value
-    elif key in REQUIRED_GROUP_FIELDS:
-        # A nested block (`access:`) or a block list (`actors:`) is present.
+    elif key in NESTED_GROUP_FIELDS:
         group[key] = value or "present"
+    elif key in REQUIRED_GROUP_FIELDS:
+        group[key] = value
 
 
 def contract_prefixes(module_yaml: str) -> list[dict[str, object]]:
     """Read current_state.backend.route_groups without a YAML library."""
     lines = module_yaml.splitlines()
     groups: list[dict[str, object]] = []
+    in_current = False
     in_backend = False
     in_groups = False
     backend_indent = 0
@@ -145,10 +161,13 @@ def contract_prefixes(module_yaml: str) -> list[dict[str, object]]:
         stripped = raw.strip()
         key, _, value = stripped.partition(":")
         value = value.strip().strip("'\"")
-        if indent == 0 and key == "current_state":
+        if indent == 0:
+            in_current = key == "current_state"
             in_backend = False
             in_groups = False
             current = None
+            continue
+        if not in_current:
             continue
         if key == "backend" and value == "" and not in_groups:
             in_backend = True
@@ -191,6 +210,7 @@ def contract_prefixes(module_yaml: str) -> list[dict[str, object]]:
 
 
 def contract_route_prefix(module_yaml: str) -> str:
+    in_current = False
     in_backend = False
     backend_indent = 0
     for raw in module_yaml.splitlines():
@@ -198,14 +218,21 @@ def contract_route_prefix(module_yaml: str) -> str:
             continue
         indent = _indent(raw)
         key, _, value = raw.strip().partition(":")
-        if key == "backend" and value.strip() == "":
+        value = value.strip().strip("'\"")
+        if indent == 0:
+            in_current = key == "current_state"
+            in_backend = False
+            continue
+        if not in_current:
+            continue
+        if key == "backend" and value == "":
             in_backend = True
             backend_indent = indent
             continue
         if in_backend and indent <= backend_indent:
             in_backend = False
-        if in_backend and key == "route_prefix":
-            return value.strip()
+        if in_backend and key == "route_prefix" and value:
+            return value
     return ""
 
 
@@ -215,7 +242,7 @@ def join_route_prefix(base: str, prefix: str) -> str:
     if not prefix:
         return base
     if not prefix.startswith("/"):
-        return f"/{prefix}"
+        prefix = f"/{prefix}"
     if base and (prefix == base or prefix.startswith(f"{base}/")):
         return prefix
     return f"{base}{prefix}" if base else prefix

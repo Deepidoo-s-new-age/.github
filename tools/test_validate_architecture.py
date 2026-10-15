@@ -178,6 +178,117 @@ class FindingTests(unittest.TestCase):
                 1,
             )
 
+    def test_empty_purpose_and_source_are_missing(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            repo = Path(raw)
+            api = repo / "backend" / "app" / "api"
+            api.mkdir(parents=True)
+            (api / "example.py").write_text(
+                'from fastapi import APIRouter\nrouter = APIRouter(prefix="/api/example")\n',
+                encoding="utf-8",
+            )
+            docs = repo / "docs"
+            docs.mkdir()
+            (docs / "module.yaml").write_text(
+                "\n".join(
+                    [
+                        "current_state:",
+                        "  backend:",
+                        "    route_prefix: /api",
+                        "    route_groups:",
+                        "      - prefix: /example",
+                        "        purpose:",
+                        "        actors:",
+                        "          - operator",
+                        "        access:",
+                        "          any_scope: []",
+                        "        source:",
+                    ]
+                ),
+                encoding="utf-8",
+            )
+            findings = findings_for(repo)
+            self.assertIn("route-group-missing-field /example purpose", findings)
+            self.assertIn("route-group-missing-field /example source", findings)
+            self.assertFalse(any("actors" in item or "access" in item for item in findings))
+
+    def test_target_state_does_not_cover_current_routes(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            repo = Path(raw)
+            api = repo / "app" / "api"
+            api.mkdir(parents=True)
+            (api / "future.py").write_text(
+                'from fastapi import APIRouter\nrouter = APIRouter(prefix="/future")\n',
+                encoding="utf-8",
+            )
+            docs = repo / "docs"
+            docs.mkdir()
+            (docs / "module.yaml").write_text(
+                "\n".join(
+                    [
+                        "current_state:",
+                        "  backend:",
+                        "    route_prefix: /api",
+                        "    route_groups:",
+                        "      - prefix: /example",
+                        "        purpose: Current group.",
+                        "        actors: []",
+                        "        access: {}",
+                        "        source: app/api/example.py",
+                        "target_state:",
+                        "  backend:",
+                        "    route_prefix: /future",
+                        "    route_groups:",
+                        "      - prefix: /future",
+                        "        actors: []",
+                    ]
+                ),
+                encoding="utf-8",
+            )
+            self.assertEqual(findings_for(repo), ["route-not-in-contract /future"])
+
+    def test_prefix_without_a_leading_slash_keeps_route_prefix(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            repo = Path(raw)
+            api = repo / "backend" / "app" / "api"
+            api.mkdir(parents=True)
+            (api / "example.py").write_text(
+                'from fastapi import APIRouter\nrouter = APIRouter(prefix="/api/example")\n',
+                encoding="utf-8",
+            )
+            docs = repo / "docs"
+            docs.mkdir()
+            (docs / "module.yaml").write_text(
+                "\n".join(
+                    [
+                        "current_state:",
+                        "  backend:",
+                        "    route_prefix: /api",
+                        "    route_groups:",
+                        "      - prefix: example",
+                        "        purpose: Example.",
+                        "        actors: []",
+                        "        access: {}",
+                        "        source: backend/app/api/example.py",
+                    ]
+                ),
+                encoding="utf-8",
+            )
+            self.assertEqual(findings_for(repo), [])
+
+    def test_examples_docs_and_venv_are_not_api_packages(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            repo = Path(raw)
+            for relative in ("examples/api", "docs/api", "venv/api"):
+                directory = repo / relative
+                directory.mkdir(parents=True)
+                (directory / "routes.py").write_text(
+                    'from fastapi import APIRouter\nrouter = APIRouter(prefix="/hidden")\n',
+                    encoding="utf-8",
+                )
+            self.assertEqual(findings_for(repo), [])
+            self.assertEqual(main(["--repo", str(repo), "--mode", "check"]), 0)
+
     def test_baselined_route_passes(self) -> None:
         with tempfile.TemporaryDirectory() as raw:
             repo = Path(raw)

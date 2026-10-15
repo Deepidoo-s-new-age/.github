@@ -1,6 +1,6 @@
 # CI validation — module contracts, routes and scopes
 
-The route check runs in CI. `ci-workflows` job `architecture` runs `tools/validate_architecture.py --mode check` against `docs/architecture-baseline.txt`. A route that is not covered by `docs/module.yaml` and is not already in that baseline fails the job. Foundations that have no module contract keep their current routes in the baseline. The same job compares a generated OpenAPI document with `docs/openapi.json` committed in that same tree. Scope catalogs, Play route metadata, and cross-consumer contract tests are still not checked.
+The route check runs in CI. `ci-workflows` job `architecture` runs `tools/validate_architecture.py --mode check` against `docs/architecture-baseline.txt`. A route that is not covered by `docs/module.yaml` and is not already in that baseline fails the job. Foundations that have no module contract keep their current routes in the baseline. When `docs/openapi.json` is in the tree, the same job regenerates OpenAPI and `oasdiff breaking` fails the job on a breaking difference. Scope catalogs, Play route metadata, and cross-consumer contract tests are still not checked.
 
 ## Goal
 
