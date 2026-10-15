@@ -276,6 +276,93 @@ class FindingTests(unittest.TestCase):
             )
             self.assertEqual(findings_for(repo), [])
 
+    def test_blank_group_prefix_does_not_cover_the_base(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            repo = Path(raw)
+            api = repo / "backend" / "app" / "api"
+            api.mkdir(parents=True)
+            (api / "routes.py").write_text(
+                "\n".join(
+                    [
+                        "from fastapi import APIRouter",
+                        'example = APIRouter(prefix="/api/example")',
+                        'other = APIRouter(prefix="/api/other")',
+                        'health = APIRouter(prefix="/health")',
+                    ]
+                ),
+                encoding="utf-8",
+            )
+            docs = repo / "docs"
+            docs.mkdir()
+            (docs / "module.yaml").write_text(
+                "\n".join(
+                    [
+                        "current_state:",
+                        "  backend:",
+                        "    route_prefix: /api",
+                        "    route_groups:",
+                        "      - prefix:",
+                        "        purpose: Blank prefix.",
+                        "        actors: []",
+                        "        access: {}",
+                        "        source: backend/app/api/routes.py",
+                        "      - prefix: /example",
+                        "        purpose: Example.",
+                        "        actors: []",
+                        "        access: {}",
+                        "        source: backend/app/api/routes.py",
+                    ]
+                )
+                + "\n"
+                + "\n".join(
+                    [
+                        "target_state:",
+                        "  backend:",
+                        "    route_prefix: /",
+                        "    route_groups:",
+                        "      - prefix: /health",
+                        "        purpose: Health.",
+                        "        actors: []",
+                        "        access: {}",
+                        "        source: backend/app/api/routes.py",
+                    ]
+                ),
+                encoding="utf-8",
+            )
+            self.assertEqual(
+                findings_for(repo),
+                ["route-not-in-contract /api/other", "route-not-in-contract /health"],
+            )
+
+    def test_root_route_prefix_keeps_an_absolute_group_prefix(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            repo = Path(raw)
+            api = repo / "app" / "api"
+            api.mkdir(parents=True)
+            (api / "health.py").write_text(
+                'from fastapi import APIRouter\nrouter = APIRouter(prefix="/health")\n',
+                encoding="utf-8",
+            )
+            docs = repo / "docs"
+            docs.mkdir()
+            (docs / "module.yaml").write_text(
+                "\n".join(
+                    [
+                        "current_state:",
+                        "  backend:",
+                        "    route_prefix: /",
+                        "    route_groups:",
+                        "      - prefix: /health",
+                        "        purpose: Health.",
+                        "        actors: []",
+                        "        access: {}",
+                        "        source: app/api/health.py",
+                    ]
+                ),
+                encoding="utf-8",
+            )
+            self.assertEqual(findings_for(repo), [])
+
     def test_examples_docs_and_venv_are_not_api_packages(self) -> None:
         with tempfile.TemporaryDirectory() as raw:
             repo = Path(raw)
