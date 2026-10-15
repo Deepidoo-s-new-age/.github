@@ -334,6 +334,35 @@ class FindingTests(unittest.TestCase):
                 ["route-not-in-contract /api/other", "route-not-in-contract /health"],
             )
 
+    def test_slash_group_prefix_does_not_cover_the_base(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            repo = Path(raw)
+            api = repo / "backend" / "app" / "api"
+            api.mkdir(parents=True)
+            (api / "example.py").write_text(
+                'from fastapi import APIRouter\nrouter = APIRouter(prefix="/api/example")\n',
+                encoding="utf-8",
+            )
+            docs = repo / "docs"
+            docs.mkdir()
+            (docs / "module.yaml").write_text(
+                "\n".join(
+                    [
+                        "current_state:",
+                        "  backend:",
+                        "    route_prefix: /api",
+                        "    route_groups:",
+                        "      - prefix: /",
+                        "        purpose: Whole base.",
+                        "        actors: []",
+                        "        access: {}",
+                        "        source: backend/app/api/example.py",
+                    ]
+                ),
+                encoding="utf-8",
+            )
+            self.assertEqual(findings_for(repo), ["route-not-in-contract /api/example"])
+
     def test_root_route_prefix_keeps_an_absolute_group_prefix(self) -> None:
         with tempfile.TemporaryDirectory() as raw:
             repo = Path(raw)

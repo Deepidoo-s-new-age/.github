@@ -294,8 +294,8 @@ def findings_for(repo: Path) -> list[str]:
     declared: list[str] = []
     for group in contract_prefixes(text):
         prefix = str(group.get("prefix", "")).strip()
-        full = join_route_prefix(base, prefix) if prefix else ""
-        if prefix and full:
+        full = "" if not prefix.strip("/") else join_route_prefix(base, prefix)
+        if full:
             declared.append(full if full.startswith("/") else f"/{full}")
         for field in REQUIRED_GROUP_FIELDS:
             if not str(group.get(field, "")).strip():
