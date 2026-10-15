@@ -13,7 +13,7 @@ A phase is concluded for a repository when that phase’s finish line is true fo
 | 2 — Callers, protection, coverage | Rulesets for `main` are saved in the UI on the cloned callers and on `ci-workflows`. GitHub does not enforce them while the org stays on the Free plan. Uncloned repositories were left untouched |
 | 3 — Publish `deepidoo-contracts` | Concluded for the cloned consumers. The release is git tag `v0.1.0`. Renovate is configured and waits for the GitHub App |
 | 4 — deesplay | Concluded for the new `Deepidoo-s-new-age/deesplay` and for the `auth-service` web job |
-| 5 — Architecture and security gates | Not started |
+| 5 — Architecture and security gates | Route check, SQL import-linter, and Semgrep are on the cloned repositories. The cross-service import-linter contract, base-branch oasdiff, dependency-cruiser, and the nightly smoke are not |
 | 6 — `helm-charts` and promotion | Not started |
 | 7 — Preview environments | Not started |
 | 8 — Telemetry and uptime | Not started |
@@ -21,22 +21,22 @@ A phase is concluded for a repository when that phase’s finish line is true fo
 | 10 — SonarQube | Not started |
 | 11 — Agent loop | Not started |
 
-The live shared-workflow tag is `ci-v1.0.5` (`aeb5c98`). Python callers stay on `ci-v1.0.3` (`1771088`). `ci-v1.0.0` through `ci-v1.0.4` stay where they were tagged. `ci-v1.0.4` writes the npm auth file but leaves `GITHUB_TOKEN` unset under `set -u`; the Vue caller uses `ci-v1.0.5`. `deepidoo-contracts` `v0.1.0` is `cab3c24`. `@deepidoo-s-new-age/deesplay` `1.0.1` is tag `v1.0.1` (`dc39440`).
+The live shared-workflow tag is `ci-v1.0.6` (`669ec5a`). `auth-service` and `platform-api` test jobs pin it. Their image jobs stay on `ci-v1.0.3` (`1771088`). The Vue caller stays on `ci-v1.0.5` (`aeb5c98`). `deepidoo-contracts` tests stay on `ci-v1.0.2`. `ci-v1.0.0` through `ci-v1.0.5` stay where they were tagged. `ci-v1.0.4` writes the npm auth file but leaves `GITHUB_TOKEN` unset under `set -u`. `deepidoo-contracts` `v0.1.0` is `cab3c24`. `@deepidoo-s-new-age/deesplay` `1.0.1` is tag `v1.0.1` (`dc39440`).
 
 ## Per repository
 
 | Repository | Last concluded phase | Stopped at |
 |---|---|---|
-| `ci-workflows` | 0 | Phase 4 Vue package auth is on `main` and tagged `ci-v1.0.5` ([#6](https://github.com/Deepidoo-s-new-age/ci-workflows/pull/6)). Python callers stay on `ci-v1.0.3`. Phase 2 branch protection is still blocked by the Free plan |
-| `auth-service` | 4 | Installs `@deepidoo-s-new-age/deesplay` `1.0.1` ([#10](https://github.com/Deepidoo-s-new-age/auth-service/pull/10), `1a83a47`). The web job is green and `run_build` stays off. Phase 2 branch protection remains blocked by the Free plan |
-| `platform-api` | 3 | Pins `deepidoo-contracts` `v0.1.0` ([#53](https://github.com/Deepidoo-s-new-age/platform-api/pull/53), `9bc07ad`). Image build does not clone the repository. Phase 2 branch protection remains blocked by the Free plan |
-| `deepidoo-contracts` | 3 | Release workflow is on `main` ([#129](https://github.com/Deepidoo-s-new-age/deepidoo-contracts/pull/129), `cab3c24`) and tag `v0.1.0` is green. Phase 2 branch protection remains blocked by the Free plan |
+| `ci-workflows` | 0 | Phase 5 workflows are on `main` and tagged `ci-v1.0.6` ([#7](https://github.com/Deepidoo-s-new-age/ci-workflows/pull/7)). Vue callers stay on `ci-v1.0.5`. Image callers stay on `ci-v1.0.3`. Phase 2 branch protection is still blocked by the Free plan |
+| `auth-service` | 5 | Architecture, Semgrep, and the SQL import contract are on `main` ([#11](https://github.com/Deepidoo-s-new-age/auth-service/pull/11), `2ffecdb`). Web job stays green with `run_build` off. Phase 2 branch protection remains blocked by the Free plan |
+| `platform-api` | 5 | Architecture, Semgrep, and the SQL import contract are on `main` ([#54](https://github.com/Deepidoo-s-new-age/platform-api/pull/54), `876c889`). Image build does not clone the repository. Phase 2 branch protection remains blocked by the Free plan |
+| `deepidoo-contracts` | 5 | Semgrep is on `main` ([#130](https://github.com/Deepidoo-s-new-age/deepidoo-contracts/pull/130), `7b1394c`). There is no HTTP API, so the architecture job is not called. Tag `v0.1.0` is unchanged. Phase 2 branch protection remains blocked by the Free plan |
 | `menuboards`, `deep_desk`, `scheduler`, `tickets`, `roadmap`, `epaper` | — | Stopped before phase 2. No shared caller. Left uncloned on purpose |
 | `messaging`, `call_me_maybe`, `converter` | — | Stopped before phase 2. The plan waits until these hold code, then copies a caller from `ci-workflows/examples/` |
 | `helm-charts` | — | Stopped before phase 2 and phase 6. The clone has no commits, so there are no production values to put under `CODEOWNERS` |
-| `deesplay` | 4 | Duplicated into `Deepidoo-s-new-age/deesplay` (`main` and `dev` only). Published as `@deepidoo-s-new-age/deesplay` `1.0.1` (`v1.0.1`, `dc39440`). `Deepidoo/deesplay` was left in place for the legacy repositories |
+| `deesplay` | 5 | Package `1.0.1` is unchanged (`v1.0.1`, `dc39440`). Semgrep is on `main` ([#1](https://github.com/Deepidoo-s-new-age/deesplay/pull/1), `1100f3e`). `Deepidoo/deesplay` was left in place for the legacy repositories |
 | `Deepidoo/deesplay` | — | Left untouched. Legacy repositories still depend on `@deepidoo/deesplay` |
-| `.github` | — | Holds this plan. No service caller. The phase 5 validator is not wired into CI |
+| `.github` | — | Holds this plan. `tools/validate_architecture.py` is on `main` ([#1](https://github.com/Deepidoo-s-new-age/.github/pull/1), `9cb93f8`). The architecture job clones it |
 
 ## What is already on `main`
 
@@ -111,11 +111,35 @@ GitHub Packages does not host Python, so the release is the git tag. A contracts
 
 The caller `GITHUB_TOKEN` is denied `read_package` on `@deepidoo-s-new-age/deesplay`. The web job passes the existing `SCHEMAS_READ_TOKEN` as `packages_read_token`. The admin UI peers match the published ranges for Vue, Vue Router, Pinia, vue-i18n, and Vuetify. `frontend/.npmrc` sets the scope registry and `legacy-peer-deps` for the peers the UI does not install. `auth-service` `renovate.json` also allows deesplay bumps. The Renovate GitHub App is still not installed.
 
+## Phase 5 — routes, OpenAPI, Semgrep
+
+The architecture job fails when a route is missing from `docs/module.yaml` and is not already listed in `docs/architecture-baseline.txt`. `auth-service` has 17 baselined gaps and `platform-api` has 92. Neither foundation has a module contract yet, so every current route is a known gap. A new prefix fails. `deepidoo-contracts` has no API package, so the script skips it.
+
+The same job regenerates OpenAPI and runs oasdiff 1.33.0 against `docs/openapi.json` committed in that same tree. A pull request that changes the API and updates the snapshot together passes. A pull request that leaves the snapshot behind a breaking change fails.
+
+`python-service.yml` at `ci-v1.0.6` runs `lint-imports` when `[tool.importlinter]` is present. Route handlers in both services may not import SQLAlchemy directly. `auth-service` also forbids `app.models`. `platform-api` also forbids `app.repositories`. Indirect imports through a service stay allowed.
+
+Semgrep 1.181.0 runs with `p/owasp-top-ten`, `p/python`, and `p/javascript`. The baseline is the pull request’s base commit, or `HEAD^` on a push to `main`. A finding that already exists there does not fail the job.
+
+| Repository | Merge | `main` push |
+|---|---|---|
+| `.github` | [#1](https://github.com/Deepidoo-s-new-age/.github/pull/1) `9cb93f8` | No workflow in this repository |
+| `ci-workflows` | [#7](https://github.com/Deepidoo-s-new-age/ci-workflows/pull/7) `669ec5a`. Tag `ci-v1.0.6` | Lint was green on the pull request ([38739626366](https://github.com/Deepidoo-s-new-age/ci-workflows/actions/runs/38739626366)) |
+| `auth-service` | [#11](https://github.com/Deepidoo-s-new-age/auth-service/pull/11) `2ffecdb` | [38740934316](https://github.com/Deepidoo-s-new-age/auth-service/actions/runs/38740934316) green |
+| `platform-api` | [#54](https://github.com/Deepidoo-s-new-age/platform-api/pull/54) `876c889` | [38740943465](https://github.com/Deepidoo-s-new-age/platform-api/actions/runs/38740943465) green |
+| `deepidoo-contracts` | [#130](https://github.com/Deepidoo-s-new-age/deepidoo-contracts/pull/130) `7b1394c` | Test [38740953222](https://github.com/Deepidoo-s-new-age/deepidoo-contracts/actions/runs/38740953222) and Semgrep [38740953570](https://github.com/Deepidoo-s-new-age/deepidoo-contracts/actions/runs/38740953570) green |
+| `deesplay` | [#1](https://github.com/Deepidoo-s-new-age/deesplay/pull/1) `1100f3e` | Semgrep [38740962330](https://github.com/Deepidoo-s-new-age/deesplay/actions/runs/38740962330) green. No new package tag |
+
+Not started:
+
+- The import-linter contract “a service does not import another service’s application code”. import-linter errors when the forbidden package is not installed, and those packages are not dependencies, so the contract is not in either `pyproject.toml`. The architecture script flags a top-level import of `platform_api` or `auth_service` instead. No such import exists today, so the baselines did not grow.
+- oasdiff against the OpenAPI artifact from the base branch. The job uses the snapshot committed next to the change.
+- dependency-cruiser on the `auth-service` frontend. `vue-app.yml` already runs it when a config sits next to `src/`. Adding that config needs `dependency-cruiser` in the lockfile, and updating the lockfile needs a token that can read `@deepidoo-s-new-age/deesplay`. That token was not available here.
+- The nightly preproduction smoke (login, call a module, the module calls `platform-api`). There is no preproduction environment until phase 6.
+
 ## Phases not started
 
 | Phase | Where the plan stops |
 |---|---|
-| 4 | Concluded. See the phase 4 section. The admin UI is not deployed |
-| 5 | `tools/validate_architecture.py` is not a CI job. No `security.yml`, no import-linter |
 | 6 | `helm-charts` has no charts and no values. Image jobs stay at `push: false` |
 | 7–11 | Depend on phase 6, or are optional (phase 10) |
