@@ -13,7 +13,7 @@ A phase is concluded for a repository when that phase’s finish line is true fo
 | 2 — Callers, protection, coverage | Rulesets for `main` are saved in the UI on the cloned callers and on `ci-workflows`. GitHub does not enforce them while the org stays on the Free plan. Uncloned repositories were left untouched |
 | 3 — Publish `deepidoo-contracts` | Concluded for the cloned consumers. The release is git tag `v0.1.0`. Renovate is configured and waits for the GitHub App |
 | 4 — deesplay | Concluded for the new `Deepidoo-s-new-age/deesplay` and for the `auth-service` web job |
-| 5 — Architecture and security gates | Concluded for the cloned repositories, except the frontend import graph and the nightly smoke |
+| 5 — Architecture and security gates | Route check, SQL import-linter, and Semgrep are on the cloned repositories. The cross-service import-linter contract, base-branch oasdiff, dependency-cruiser, and the nightly smoke are not |
 | 6 — `helm-charts` and promotion | Not started |
 | 7 — Preview environments | Not started |
 | 8 — Telemetry and uptime | Not started |
@@ -115,7 +115,7 @@ The caller `GITHUB_TOKEN` is denied `read_package` on `@deepidoo-s-new-age/deesp
 
 The architecture job fails when a route is missing from `docs/module.yaml` and is not already listed in `docs/architecture-baseline.txt`. `auth-service` has 17 baselined gaps and `platform-api` has 92. Neither foundation has a module contract yet, so every current route is a known gap. A new prefix fails. `deepidoo-contracts` has no API package, so the script skips it.
 
-The same job regenerates OpenAPI and runs oasdiff 1.33.0 against `docs/openapi.json`. A breaking change fails. A compatible addition does not.
+The same job regenerates OpenAPI and runs oasdiff 1.33.0 against `docs/openapi.json` committed in that same tree. A pull request that changes the API and updates the snapshot together passes. A pull request that leaves the snapshot behind a breaking change fails.
 
 `python-service.yml` at `ci-v1.0.6` runs `lint-imports` when `[tool.importlinter]` is present. Route handlers in both services may not import SQLAlchemy directly. `auth-service` also forbids `app.models`. `platform-api` also forbids `app.repositories`. Indirect imports through a service stay allowed.
 
@@ -132,6 +132,8 @@ Semgrep 1.181.0 runs with `p/owasp-top-ten`, `p/python`, and `p/javascript`. The
 
 Not started:
 
+- The import-linter contract “a service does not import another service’s application code”. import-linter errors when the forbidden package is not installed, and those packages are not dependencies, so the contract is not in either `pyproject.toml`. The architecture script flags a top-level import of `platform_api` or `auth_service` instead. No such import exists today, so the baselines did not grow.
+- oasdiff against the OpenAPI artifact from the base branch. The job uses the snapshot committed next to the change.
 - dependency-cruiser on the `auth-service` frontend. `vue-app.yml` already runs it when a config sits next to `src/`. Adding that config needs `dependency-cruiser` in the lockfile, and updating the lockfile needs a token that can read `@deepidoo-s-new-age/deesplay`. That token was not available here.
 - The nightly preproduction smoke (login, call a module, the module calls `platform-api`). There is no preproduction environment until phase 6.
 
