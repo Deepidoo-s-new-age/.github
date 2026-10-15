@@ -12,7 +12,7 @@ A phase is concluded for a repository when that phase’s finish line is true fo
 | 1 — Prove the caller | Concluded for `auth-service` and `platform-api` |
 | 2 — Callers, protection, coverage | Rulesets for `main` are saved in the UI on the cloned callers and on `ci-workflows`. GitHub does not enforce them while the org stays on the Free plan. Uncloned repositories were left untouched |
 | 3 — Publish `deepidoo-contracts` | Concluded for the cloned consumers. The release is git tag `v0.1.0`. Renovate is configured and waits for the GitHub App |
-| 4 — deesplay | Not started |
+| 4 — deesplay | Concluded for the new `Deepidoo-s-new-age/deesplay` and for the `auth-service` web job |
 | 5 — Architecture and security gates | Not started |
 | 6 — `helm-charts` and promotion | Not started |
 | 7 — Preview environments | Not started |
@@ -21,20 +21,21 @@ A phase is concluded for a repository when that phase’s finish line is true fo
 | 10 — SonarQube | Not started |
 | 11 — Agent loop | Not started |
 
-The live shared-workflow tag is `ci-v1.0.3` (`1771088`). `ci-v1.0.0`, `ci-v1.0.1`, and `ci-v1.0.2` stay where they were tagged. `deepidoo-contracts` `v0.1.0` is `cab3c24`.
+The live shared-workflow tag is `ci-v1.0.5` (`aeb5c98`). Python callers stay on `ci-v1.0.3` (`1771088`). `ci-v1.0.0` through `ci-v1.0.4` stay where they were tagged. `ci-v1.0.4` writes the npm auth file but leaves `GITHUB_TOKEN` unset under `set -u`; the Vue caller uses `ci-v1.0.5`. `deepidoo-contracts` `v0.1.0` is `cab3c24`. `@deepidoo-s-new-age/deesplay` `1.0.1` is tag `v1.0.1` (`dc39440`).
 
 ## Per repository
 
 | Repository | Last concluded phase | Stopped at |
 |---|---|---|
-| `ci-workflows` | 0 | Phase 3 git-tag auth is on `main` and tagged `ci-v1.0.3` ([#4](https://github.com/Deepidoo-s-new-age/ci-workflows/pull/4)). Phase 2 branch protection is still blocked by the Free plan |
-| `auth-service` | 3 | Pins `deepidoo-contracts` `v0.1.0` ([#9](https://github.com/Deepidoo-s-new-age/auth-service/pull/9), `8e411da`). Image build does not clone the repository. Phase 2 branch protection remains blocked by the Free plan |
+| `ci-workflows` | 0 | Phase 4 Vue package auth is on `main` and tagged `ci-v1.0.5` ([#6](https://github.com/Deepidoo-s-new-age/ci-workflows/pull/6)). Python callers stay on `ci-v1.0.3`. Phase 2 branch protection is still blocked by the Free plan |
+| `auth-service` | 4 | Installs `@deepidoo-s-new-age/deesplay` `1.0.1` ([#10](https://github.com/Deepidoo-s-new-age/auth-service/pull/10), `1a83a47`). The web job is green and `run_build` stays off. Phase 2 branch protection remains blocked by the Free plan |
 | `platform-api` | 3 | Pins `deepidoo-contracts` `v0.1.0` ([#53](https://github.com/Deepidoo-s-new-age/platform-api/pull/53), `9bc07ad`). Image build does not clone the repository. Phase 2 branch protection remains blocked by the Free plan |
 | `deepidoo-contracts` | 3 | Release workflow is on `main` ([#129](https://github.com/Deepidoo-s-new-age/deepidoo-contracts/pull/129), `cab3c24`) and tag `v0.1.0` is green. Phase 2 branch protection remains blocked by the Free plan |
 | `menuboards`, `deep_desk`, `scheduler`, `tickets`, `roadmap`, `epaper` | — | Stopped before phase 2. No shared caller. Left uncloned on purpose |
 | `messaging`, `call_me_maybe`, `converter` | — | Stopped before phase 2. The plan waits until these hold code, then copies a caller from `ci-workflows/examples/` |
 | `helm-charts` | — | Stopped before phase 2 and phase 6. The clone has no commits, so there are no production values to put under `CODEOWNERS` |
-| `Deepidoo/deesplay` | — | Stopped before phase 4. Still in `Deepidoo`, still named `@deepidoo/deesplay` |
+| `deesplay` | 4 | Duplicated into `Deepidoo-s-new-age/deesplay` (`main` and `dev` only). Published as `@deepidoo-s-new-age/deesplay` `1.0.1` (`v1.0.1`, `dc39440`). `Deepidoo/deesplay` was left in place for the legacy repositories |
+| `Deepidoo/deesplay` | — | Left untouched. Legacy repositories still depend on `@deepidoo/deesplay` |
 | `.github` | — | Holds this plan. No service caller. The phase 5 validator is not wired into CI |
 
 ## What is already on `main`
@@ -97,11 +98,24 @@ GitHub Packages does not host Python, so the release is the git tag. A contracts
 
 `renovate.json` in the two services proposes only `deepidoo-contracts` bumps. The Renovate GitHub App is not installed on the organization, so those files do not open pull requests yet.
 
+## Phase 4 — deesplay on GitHub Packages
+
+`Deepidoo/deesplay` stays where it is. `Deepidoo-s-new-age/deesplay` is a copy of branches `main` and `dev` only. The package name is `@deepidoo-s-new-age/deesplay`.
+
+| What | Where |
+|---|---|
+| Rename and release workflow | `a36efe4` on `main`, also on `dev`. Tag `v1.0.0` published `1.0.0` |
+| Source typechecks in a consuming app | `dc39440`. Tag `v1.0.1` published `1.0.1`. Release run [38712991821](https://github.com/Deepidoo-s-new-age/deesplay/actions/runs/38712991821) green |
+| Vue install auth | [#5](https://github.com/Deepidoo-s-new-age/ci-workflows/pull/5) `ci-v1.0.4`, then [#6](https://github.com/Deepidoo-s-new-age/ci-workflows/pull/6) `ci-v1.0.5` (`aeb5c98`) |
+| `auth-service` web job | [#10](https://github.com/Deepidoo-s-new-age/auth-service/pull/10) `1a83a47`. Main run [38715031428](https://github.com/Deepidoo-s-new-age/auth-service/actions/runs/38715031428): `web / web`, `test / test`, and `image / image` green. `run_build` is false. No frontend image |
+
+The caller `GITHUB_TOKEN` is denied `read_package` on `@deepidoo-s-new-age/deesplay`. The web job passes the existing `SCHEMAS_READ_TOKEN` as `packages_read_token`. The admin UI peers match the published ranges for Vue, Vue Router, Pinia, vue-i18n, and Vuetify. `frontend/.npmrc` sets the scope registry and `legacy-peer-deps` for the peers the UI does not install. `auth-service` `renovate.json` also allows deesplay bumps. The Renovate GitHub App is still not installed.
+
 ## Phases not started
 
 | Phase | Where the plan stops |
 |---|---|
-| 4 | `deesplay` is still `@deepidoo/deesplay` in `Deepidoo`. `auth-service` has no `web` job |
+| 4 | Concluded. See the phase 4 section. The admin UI is not deployed |
 | 5 | `tools/validate_architecture.py` is not a CI job. No `security.yml`, no import-linter |
 | 6 | `helm-charts` has no charts and no values. Image jobs stay at `push: false` |
 | 7–11 | Depend on phase 6, or are optional (phase 10) |
