@@ -15,18 +15,34 @@ from pathlib import Path
 
 ROUTER_CALLS = {"APIRouter", "CrudRouter"}
 HTTP_METHODS = {"get", "post", "put", "patch", "delete"}
-API_DIRS = (Path("backend/app/api"), Path("app/api"))
-APP_DIRS = (Path("backend/app"), Path("app"))
 REQUIRED_GROUP_FIELDS = ("purpose", "actors", "access", "source")
 OTHER_SERVICES = {"platform_api", "auth_service"}
+SKIP_PARTS = frozenset(
+    {".venv", "node_modules", ".git", "site-packages", "__pycache__", "dist", ".yarn", "tests", "test"}
+)
 
 
-def api_dir(repo: Path) -> Path | None:
-    for relative in API_DIRS:
-        candidate = repo / relative
-        if candidate.is_dir():
-            return candidate
-    return None
+def api_directories(repo: Path) -> list[Path]:
+    """Every application ``api`` package, including layouts such as ``src/scheduler/api``."""
+    found: list[Path] = []
+    for path in sorted(repo.rglob("api")):
+        if not path.is_dir():
+            continue
+        relative = path.relative_to(repo)
+        if any(part in SKIP_PARTS for part in relative.parts):
+            continue
+        python_files = [
+            child
+            for child in path.rglob("*.py")
+            if child.name != "__init__.py"
+            and not any(part in SKIP_PARTS for part in child.relative_to(repo).parts)
+        ]
+        if not python_files:
+            continue
+        if any(path != earlier and earlier in path.parents for earlier in found):
+            continue
+        found.append(path)
+    return found
 
 
 def _string_keyword(call: ast.Call, name: str) -> str | None:
@@ -89,19 +105,27 @@ def route_prefixes(source: str) -> set[str]:
 
 
 def discover_routes(repo: Path) -> set[str]:
-    directory = api_dir(repo)
-    if directory is None:
-        return set()
     found: set[str] = set()
-    for path in sorted(directory.rglob("*.py")):
-        if path.name == "__init__.py":
-            continue
-        found.update(route_prefixes(path.read_text(encoding="utf-8")))
+    for directory in api_directories(repo):
+        for path in sorted(directory.rglob("*.py")):
+            if path.name == "__init__.py":
+                continue
+            if any(part in SKIP_PARTS for part in path.relative_to(repo).parts):
+                continue
+            found.update(route_prefixes(path.read_text(encoding="utf-8")))
     return found
 
 
 def _indent(line: str) -> int:
     return len(line) - len(line.lstrip(" "))
+
+
+def _assign_group_field(group: dict[str, object], key: str, value: str) -> None:
+    if key == "prefix":
+        group["prefix"] = value
+    elif key in REQUIRED_GROUP_FIELDS:
+        # A nested block (`access:`) or a block list (`actors:`) is present.
+        group[key] = value or "present"
 
 
 def contract_prefixes(module_yaml: str) -> list[dict[str, object]]:
@@ -112,48 +136,57 @@ def contract_prefixes(module_yaml: str) -> list[dict[str, object]]:
     in_groups = False
     backend_indent = 0
     groups_indent = 0
+    item_indent: int | None = None
     current: dict[str, object] | None = None
     for raw in lines:
         if not raw.strip() or raw.lstrip().startswith("#"):
             continue
         indent = _indent(raw)
-        key, _, value = raw.strip().partition(":")
-        value = value.strip()
+        stripped = raw.strip()
+        key, _, value = stripped.partition(":")
+        value = value.strip().strip("'\"")
         if indent == 0 and key == "current_state":
             in_backend = False
             in_groups = False
+            current = None
             continue
-        if key == "backend" and value == "":
+        if key == "backend" and value == "" and not in_groups:
             in_backend = True
             backend_indent = indent
             in_groups = False
+            current = None
             continue
         if in_backend and indent <= backend_indent and key != "backend":
             in_backend = False
             in_groups = False
+            current = None
         if not in_backend:
             continue
         if key == "route_groups" and value == "":
             in_groups = True
             groups_indent = indent
+            item_indent = None
+            current = None
             continue
-        if in_groups and indent <= groups_indent and not raw.strip().startswith("-"):
+        if in_groups and indent <= groups_indent and not stripped.startswith("-"):
             in_groups = False
+            current = None
         if not in_groups:
             continue
-        if raw.strip().startswith("- "):
+        if stripped.startswith("- "):
+            if item_indent is None:
+                item_indent = indent
+            if indent != item_indent:
+                continue
             current = {}
             groups.append(current)
-            key, _, value = raw.strip()[2:].partition(":")
-            value = value.strip()
-        if current is None:
+            rest = stripped[2:]
+            field, _, field_value = rest.partition(":")
+            _assign_group_field(current, field.strip(), field_value.strip().strip("'\""))
             continue
-        if key == "prefix":
-            current["prefix"] = value
-        elif key == "route_prefix":
-            current["route_prefix"] = value
-        elif key in REQUIRED_GROUP_FIELDS:
-            current[key] = value
+        if current is None or item_indent is None or indent != item_indent + 2:
+            continue
+        _assign_group_field(current, key, value)
     return groups
 
 
@@ -176,12 +209,35 @@ def contract_route_prefix(module_yaml: str) -> str:
     return ""
 
 
+def join_route_prefix(base: str, prefix: str) -> str:
+    base = base.rstrip("/")
+    prefix = prefix.rstrip("/")
+    if not prefix:
+        return base
+    if not prefix.startswith("/"):
+        return f"/{prefix}"
+    if base and (prefix == base or prefix.startswith(f"{base}/")):
+        return prefix
+    return f"{base}{prefix}" if base else prefix
+
+
 def cross_service_imports(repo: Path) -> list[str]:
-    directory = next((repo / relative for relative in APP_DIRS if (repo / relative).is_dir()), None)
-    if directory is None:
-        return []
+    parents = []
+    for directory in api_directories(repo):
+        parent = directory.parent
+        if parent not in parents and parent != repo:
+            parents.append(parent)
+    found: list[str] = []
+    for directory in parents:
+        found.extend(_imports_under(repo, directory))
+    return found
+
+
+def _imports_under(repo: Path, directory: Path) -> list[str]:
     found: list[str] = []
     for path in sorted(directory.rglob("*.py")):
+        if any(part in SKIP_PARTS for part in path.relative_to(repo).parts):
+            continue
         tree = ast.parse(path.read_text(encoding="utf-8"))
         for node in ast.walk(tree):
             modules: list[str] = []
@@ -197,8 +253,7 @@ def cross_service_imports(repo: Path) -> list[str]:
 
 
 def findings_for(repo: Path) -> list[str]:
-    directory = api_dir(repo)
-    if directory is None:
+    if not api_directories(repo):
         return []
     routes = discover_routes(repo)
     contract_path = repo / "docs" / "module.yaml"
@@ -211,8 +266,8 @@ def findings_for(repo: Path) -> list[str]:
     base = contract_route_prefix(text).rstrip("/")
     declared: list[str] = []
     for group in contract_prefixes(text):
-        prefix = str(group.get("prefix", "")).rstrip("/")
-        full = f"{base}{prefix}" if prefix.startswith("/") else prefix
+        prefix = str(group.get("prefix", "")).strip()
+        full = join_route_prefix(base, prefix)
         if full:
             declared.append(full if full.startswith("/") else f"/{full}")
         for field in REQUIRED_GROUP_FIELDS:
@@ -249,7 +304,7 @@ def main(argv: list[str] | None = None) -> int:
         baseline_path.write_text("\n".join(current) + ("\n" if current else ""), encoding="utf-8")
         print(f"wrote {len(current)} gaps to {baseline_path}")
         return 0
-    if not current and api_dir(repo) is None:
+    if not current and not api_directories(repo):
         print("no API package; architecture check skipped")
         return 0
     known = read_baseline(baseline_path)

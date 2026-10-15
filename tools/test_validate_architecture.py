@@ -93,8 +93,90 @@ class FindingTests(unittest.TestCase):
             app = repo / "app"
             app.mkdir()
             (app / "main.py").write_text("import platform_api\n", encoding="utf-8")
-            (app / "api").mkdir()
+            api = app / "api"
+            api.mkdir()
+            (api / "health.py").write_text(
+                'from fastapi import APIRouter\nrouter = APIRouter()\n',
+                encoding="utf-8",
+            )
             self.assertIn("cross-service-import app/main.py platform_api", findings_for(repo))
+
+    def test_template_shape_accepts_nested_access_and_lists(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            repo = Path(raw)
+            api = repo / "backend" / "app" / "api"
+            api.mkdir(parents=True)
+            (api / "example.py").write_text(
+                'from fastapi import APIRouter\nrouter = APIRouter(prefix="/api/example")\n',
+                encoding="utf-8",
+            )
+            docs = repo / "docs"
+            docs.mkdir()
+            (docs / "module.yaml").write_text(
+                "\n".join(
+                    [
+                        "current_state:",
+                        "  backend:",
+                        "    route_prefix: /api",
+                        "    route_groups:",
+                        "      - prefix: /example",
+                        "        purpose: One or two sentences.",
+                        "        actors:",
+                        "          - operator",
+                        "        access:",
+                        "          any_scope: []",
+                        "        source: backend/app/api/example.py",
+                        "        downstream:",
+                        "          - platform-api",
+                    ]
+                ),
+                encoding="utf-8",
+            )
+            self.assertEqual(findings_for(repo), [])
+
+    def test_absolute_prefix_is_not_joined_twice(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            repo = Path(raw)
+            api = repo / "src" / "scheduler" / "api"
+            api.mkdir(parents=True)
+            (api / "jobs.py").write_text(
+                'from fastapi import APIRouter\nrouter = APIRouter(prefix="/scheduler")\n',
+                encoding="utf-8",
+            )
+            docs = repo / "docs"
+            docs.mkdir()
+            (docs / "module.yaml").write_text(
+                "\n".join(
+                    [
+                        "current_state:",
+                        "  backend:",
+                        "    route_prefix: /scheduler",
+                        "    route_groups:",
+                        "      - prefix: /scheduler",
+                        "        purpose: Jobs.",
+                        "        actors: []",
+                        "        access:",
+                        "          any_scope: []",
+                        "        source: src/scheduler/api/jobs.py",
+                    ]
+                ),
+                encoding="utf-8",
+            )
+            self.assertEqual(findings_for(repo), [])
+
+    def test_scheduler_layout_without_a_contract_is_not_skipped(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            repo = Path(raw)
+            api = repo / "src" / "scheduler" / "api"
+            api.mkdir(parents=True)
+            (api / "jobs.py").write_text(
+                'from fastapi import APIRouter\nrouter = APIRouter(prefix="/scheduler")\n',
+                encoding="utf-8",
+            )
+            self.assertEqual(
+                main(["--repo", str(repo), "--mode", "check"]),
+                1,
+            )
 
     def test_baselined_route_passes(self) -> None:
         with tempfile.TemporaryDirectory() as raw:
