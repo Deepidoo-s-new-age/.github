@@ -10,7 +10,7 @@ A phase is concluded for a repository when that phase’s finish line is true fo
 |---|---|
 | 0 — Shared workflows | Concluded |
 | 1 — Prove the caller | Concluded for `auth-service` and `platform-api` |
-| 2 — Callers, protection, coverage | In progress on the cloned callers: coverage and `CODEOWNERS` are on `main`. Branch protection is blocked because the org is on the Free plan. Uncloned repositories were left untouched |
+| 2 — Callers, protection, coverage | Rulesets for `main` are saved in the UI on the cloned callers and on `ci-workflows`. GitHub does not enforce them while the org stays on the Free plan. Uncloned repositories were left untouched |
 | 3 — Publish `deepidoo-contracts` | Concluded for the cloned consumers. The release is git tag `v0.1.0`. Renovate is configured and waits for the GitHub App |
 | 4 — deesplay | Not started |
 | 5 — Architecture and security gates | Not started |
@@ -79,7 +79,7 @@ Images stay unpublished (`push: false`).
 
 Not done, and blocking the finish line:
 
-- Branch protection on `auth-service`, `platform-api`, and `deepidoo-contracts`. The account is admin on those repositories. GitHub still refuses the protection API with “Upgrade to GitHub Pro or make this repository public”, because `Deepidoo-s-new-age` is on the Free plan and the repositories are private. Protection of a private repository needs GitHub Team. Once that plan is on, protect `main` with a required pull request, required check `test / test` (strict), and no force-push. `auth-service` and `deepidoo-contracts` also require a review from code owners. `CODEOWNERS` is already on `main` and is not enforced until that setting exists.
+- Enforcement of the `main` rulesets. They are saved on `auth-service`, `platform-api`, `deepidoo-contracts`, and `ci-workflows`. The ruleset API still returns the Free-plan refusal, and GitHub will not apply the rules until an organization owner moves `Deepidoo-s-new-age` to GitHub Team. The saved rules are: required pull request, required check `test / test` (strict; `lint` on `ci-workflows`), no force-push, no deletion, and a code-owner review on `auth-service` and `deepidoo-contracts`.
 - Shared CI on the other non-empty repositories. They were left uncloned.
 
 `CODEOWNERS` for `helm-charts` production values waits until that repository has values.
