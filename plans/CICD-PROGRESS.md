@@ -1,6 +1,6 @@
 # CI/CD progress — Deepidoo-s-new-age
 
-Status of [CICD-PLAN.md](CICD-PLAN.md) as of 15 October 2026.
+Status of [CICD-PLAN.md](CICD-PLAN.md) as of 19 October 2026.
 
 A phase is concluded for a repository when that phase’s finish line is true for it. A later phase that is not started leaves the repository stopped at the last concluded phase.
 
@@ -13,8 +13,8 @@ A phase is concluded for a repository when that phase’s finish line is true fo
 | 2 — Callers, protection, coverage | Rulesets for `main` are saved in the UI on the cloned callers and on `ci-workflows`. GitHub does not enforce them while the org stays on the Free plan. Uncloned repositories were left untouched |
 | 3 — Publish `deepidoo-contracts` | Concluded for the cloned consumers. The release is git tag `v0.1.0`. Renovate is configured and waits for the GitHub App |
 | 4 — deesplay | Concluded for the new `Deepidoo-s-new-age/deesplay` and for the `auth-service` web job |
-| 5 — Architecture and security gates | Route check, SQL import-linter, and Semgrep are on the cloned repositories. The cross-service import-linter contract, base-branch oasdiff, dependency-cruiser, and the nightly smoke are not |
-| 6 — `helm-charts` and promotion | Not started |
+| 5 — Architecture and security gates | Finish line met on the cloned repositories. Cross-service import-linter, base-commit oasdiff (`ci-v1.0.7`), and dependency-cruiser are on `main`. The nightly smoke waits for a preproduction deploy. Comparing the generated spec with `docs/openapi.json` in the same commit is [ci-workflows #9](https://github.com/Deepidoo-s-new-age/ci-workflows/pull/9), still open |
+| 6 — `helm-charts` and promotion | Started. Charts and deploy workflows are on `helm-charts` `main` (`f55ad5d`). No digest is recorded, no cluster secret is set, and image push from `main` is still an open pull request |
 | 7 — Preview environments | Not started |
 | 8 — Telemetry and uptime | Not started |
 | 9 — Supply chain | Not started |
@@ -33,7 +33,7 @@ The live shared-workflow tag is `ci-v1.0.6` (`669ec5a`). `auth-service` and `pla
 | `deepidoo-contracts` | 5 | Semgrep is on `main` ([#130](https://github.com/Deepidoo-s-new-age/deepidoo-contracts/pull/130), `7b1394c`). There is no HTTP API, so the architecture job is not called. Tag `v0.1.0` is unchanged. Phase 2 branch protection remains blocked by the Free plan |
 | `menuboards`, `deep_desk`, `scheduler`, `tickets`, `roadmap`, `epaper` | — | Stopped before phase 2. No shared caller. Left uncloned on purpose |
 | `messaging`, `call_me_maybe`, `converter` | — | Stopped before phase 2. The plan waits until these hold code, then copies a caller from `ci-workflows/examples/` |
-| `helm-charts` | — | Stopped before phase 2 and phase 6. The clone has no commits, so there are no production values to put under `CODEOWNERS` |
+| `helm-charts` | — | Phase 6 started (`f55ad5d`). `charts/app`, `charts/job`, and preproduction and production values exist. Digests are empty, so apply does not run. `KUBECONFIG` is not set. Argo CD is not installed |
 | `deesplay` | 5 | Package `1.0.1` is unchanged (`v1.0.1`, `dc39440`). Semgrep is on `main` ([#1](https://github.com/Deepidoo-s-new-age/deesplay/pull/1), `1100f3e`). `Deepidoo/deesplay` was left in place for the legacy repositories |
 | `Deepidoo/deesplay` | — | Left untouched. Legacy repositories still depend on `@deepidoo/deesplay` |
 | `.github` | — | Holds this plan. `tools/validate_architecture.py` is on `main` ([#1](https://github.com/Deepidoo-s-new-age/.github/pull/1), `9cb93f8`). The architecture job clones it |
@@ -83,7 +83,7 @@ Not done, and blocking the finish line:
 - Enforcement of the `main` rulesets. They are saved on `auth-service`, `platform-api`, `deepidoo-contracts`, and `ci-workflows`. The ruleset API still returns the Free-plan refusal, and GitHub will not apply the rules until an organization owner moves `Deepidoo-s-new-age` to GitHub Team. The saved rules are: required pull request, required check `test / test` (strict; `lint` on `ci-workflows`), no force-push, no deletion, and a code-owner review on `auth-service` and `deepidoo-contracts`.
 - Shared CI on the other non-empty repositories. They were left uncloned.
 
-`CODEOWNERS` for `helm-charts` production values waits until that repository has values.
+`CODEOWNERS` for `helm-charts` production values is still not added. The values files exist and their digests are empty.
 
 ## Phase 3 — git tag, cloned repositories
 
@@ -130,16 +130,24 @@ Semgrep 1.181.0 runs with `p/owasp-top-ten`, `p/python`, and `p/javascript`. The
 | `deepidoo-contracts` | [#130](https://github.com/Deepidoo-s-new-age/deepidoo-contracts/pull/130) `7b1394c` | Test [38740953222](https://github.com/Deepidoo-s-new-age/deepidoo-contracts/actions/runs/38740953222) and Semgrep [38740953570](https://github.com/Deepidoo-s-new-age/deepidoo-contracts/actions/runs/38740953570) green |
 | `deesplay` | [#1](https://github.com/Deepidoo-s-new-age/deesplay/pull/1) `1100f3e` | Semgrep [38740962330](https://github.com/Deepidoo-s-new-age/deesplay/actions/runs/38740962330) green. No new package tag |
 
-Not started:
+Landed after the table above:
 
-- The import-linter contract “a service does not import another service’s application code”. import-linter errors when the forbidden package is not installed, and those packages are not dependencies, so the contract is not in either `pyproject.toml`. The architecture script flags a top-level import of `platform_api` or `auth_service` instead. No such import exists today, so the baselines did not grow.
-- oasdiff against the OpenAPI artifact from the base branch. The job uses the snapshot committed next to the change.
-- dependency-cruiser on the `auth-service` frontend. `vue-app.yml` already runs it when a config sits next to `src/`. Adding that config needs `dependency-cruiser` in the lockfile, and updating the lockfile needs a token that can read `@deepidoo-s-new-age/deesplay`. That token was not available here.
-- The nightly preproduction smoke (login, call a module, the module calls `platform-api`). There is no preproduction environment until phase 6.
+- Cross-service import-linter is on `main` ([auth-service #12](https://github.com/Deepidoo-s-new-age/auth-service/pull/12), [platform-api #55](https://github.com/Deepidoo-s-new-age/platform-api/pull/55)). Each forbidden module is an empty dev stub. The production image does not install it.
+- Architecture callers pin `ci-v1.0.7`. oasdiff compares the generated spec with the base commit.
+- dependency-cruiser runs in the `auth-service` web job.
+- The nightly preproduction smoke is still not started. It waits for a preproduction deploy.
+- A second oasdiff, against `docs/openapi.json` in the same commit, is [ci-workflows #9](https://github.com/Deepidoo-s-new-age/ci-workflows/pull/9) and is not tagged.
+
+## Phase 6 — charts and promotion
+
+`helm-charts` `main` holds `charts/app`, `charts/job`, and preproduction and production values for `auth-service` and `platform-api`. The migration job is off: neither service has an Alembic command. `auth-service` creates its schema when the process starts.
+
+Digests are empty, so the deploy workflows skip apply. The `preproduction` and `production` environments have no `KUBECONFIG`, and the cluster pull secret is not created here. Argo CD is not installed. The Free plan still cannot require a production reviewer.
+
+Image push from `main` is proposed in [auth-service #14](https://github.com/Deepidoo-s-new-age/auth-service/pull/14) and [platform-api #57](https://github.com/Deepidoo-s-new-age/platform-api/pull/57). Until those merge, image jobs stay at `push: false`. The promote job needs a `HELM_CHARTS_TOKEN` secret on each service repository.
 
 ## Phases not started
 
 | Phase | Where the plan stops |
 |---|---|
-| 6 | `helm-charts` has no charts and no values. Image jobs stay at `push: false` |
-| 7–11 | Depend on phase 6, or are optional (phase 10) |
+| 7–11 | Depend on a real preproduction deploy, or are optional (phase 10) |
