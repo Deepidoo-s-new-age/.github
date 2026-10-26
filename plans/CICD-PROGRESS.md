@@ -85,7 +85,7 @@ Recorded here so the plan text stays the target:
 - **Shared preview workflow.** The preview image build is a copy in each service, not a reusable workflow in `ci-workflows`. Move it there before a third service gets a preview.
 - **Secrets in git.** The Postgres password and `JWT_SECRET` are inert placeholder values in git for every namespace. `runtime-env` ([#18](https://github.com/Deepidoo-s-new-age/helm-charts/pull/18)) is the interim for production. SOPS or External Secrets is phase 9. Changing the Postgres password also needs `ALTER USER` on the existing volume.
 - **Cluster.** Preproduction and production run on the cluster whose kubeconfig is `configs/stress-test.yml`, next to the `tsm-*` and `new-age-load` namespaces.
-- **No migrations yet.** No migration runs: neither service has an Alembic command, and `charts/job` has no Argo CD Application.
+- **Migrations.** [auth-service #22](https://github.com/Deepidoo-s-new-age/auth-service/pull/22) creates schema `auth`. [platform-api #63](https://github.com/Deepidoo-s-new-age/platform-api/pull/63) creates `givemenext_production.users`. A preview runs `alembic upgrade head` before the seed. Preproduction and production leave the hook off until the digest contains that command. The other `givemenext_production` tables are not in this revision.
 - **Baselines act as a waiver list.** Foundations have no `docs/module.yaml`, so their architecture baseline is used as a waiver list. `auth-service` added three `/v1/acl/modules` routes to it in `f117dba`.
 - **Renovate.** The GitHub App is not installed, so `renovate.json` opens nothing.
 
@@ -174,7 +174,7 @@ A push to `main` in a service publishes `ghcr.io/deepidoo-s-new-age/<service>:<g
 
 Argo CD `v3.5.6` in namespace `argocd` applies `main` ([#12](https://github.com/Deepidoo-s-new-age/helm-charts/pull/12)). `helm-charts` lists no repository secrets; the secrets of its `preproduction` and `production` environments were not listed. No service repository contains `kubectl`. The clone credential is the read-only deploy key `argocd-helm-charts`. The kubeconfig stays in gitignored `configs/`. Repeating the install is [docs/cluster.md](https://github.com/Deepidoo-s-new-age/helm-charts/blob/main/docs/cluster.md) ([#13](https://github.com/Deepidoo-s-new-age/helm-charts/pull/13)).
 
-The migration job is off: neither service has an Alembic command. `auth-service` creates schema `auth` on startup.
+The migration hook is in the open seed pull requests and stays off on `main`: the pinned digests do not contain `alembic upgrade head`. `auth-service` on `main` still creates schema `auth` on startup.
 
 ## Phase 7 — preview namespaces
 
