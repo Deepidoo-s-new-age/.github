@@ -1,8 +1,10 @@
 # CI/CD progress — Deepidoo-s-new-age
 
-Status of [CICD-PLAN.md](CICD-PLAN.md) as of 26 October 2026.
+Status of [CICD-PLAN.md](CICD-PLAN.md) as of 26 October 2026, afternoon.
 
 A phase is concluded for a repository when that phase’s finish line is true for it. A later phase that is not started leaves the repository stopped at the last concluded phase.
+
+**Branch rulesets are not enforced, and the plan goes on without them.** The organization is on the GitHub Free plan. The ruleset and branch-protection APIs return `403 Upgrade to GitHub Pro` on every private repository. Phase 2 asks for a required check, no direct pushes to `main`, and code-owner review. Those rules cannot be enforced today. They are counted as an accepted exception, not as a blocker: a phase whose only open item is ruleset enforcement counts as concluded. The repositories that need a ruleset once the plan allows it are listed in [Rulesets waiting on the GitHub plan](#rulesets-waiting-on-the-github-plan).
 
 How a change reaches preproduction and production is [helm-charts/docs/deploying.md](https://github.com/Deepidoo-s-new-age/helm-charts/blob/main/docs/deploying.md). Rebuilding the cluster is [helm-charts/docs/cluster.md](https://github.com/Deepidoo-s-new-age/helm-charts/blob/main/docs/cluster.md). A pull-request preview is [helm-charts/docs/previews.md](https://github.com/Deepidoo-s-new-age/helm-charts/blob/main/docs/previews.md).
 
@@ -12,160 +14,174 @@ How a change reaches preproduction and production is [helm-charts/docs/deploying
 |---|---|
 | 0 — Shared workflows | Concluded |
 | 1 — Prove the caller | Concluded for `auth-service` and `platform-api` |
-| 2 — Callers, protection, coverage | Rulesets for `main` are saved in the UI on the cloned callers and on `ci-workflows`. GitHub does not enforce them while the org stays on the Free plan. Uncloned repositories were left untouched |
+| 2 — Callers, protection, coverage | Concluded for the cloned repositories, with the ruleset exception. The six uncloned repositories with code still have no shared caller |
 | 3 — Publish `deepidoo-contracts` | Concluded for the cloned consumers. The release is git tag `v0.1.0`. Renovate is configured and waits for the GitHub App |
-| 4 — deesplay | Concluded for the new `Deepidoo-s-new-age/deesplay` and for the `auth-service` web job |
-| 5 — Architecture and security gates | Finish line met on the cloned repositories. Cross-service import-linter, base-commit oasdiff (`ci-v1.0.7`), and dependency-cruiser are on `main`. The nightly smoke workflow has not been added. [ci-workflows #9](https://github.com/Deepidoo-s-new-age/ci-workflows/pull/9) is merged and is not tagged, so callers still run the `ci-v1.0.7` check |
-| 6 — `helm-charts` and promotion | Concluded. Argo CD `v3.5.6` applies `main`. Both namespaces run the merged digests. The `preproduction` and `production` environments on `helm-charts` hold no kubeconfig |
-| 7 — Preview environments | Open. Preview manifests and Secret `preview-github` are in the cluster. Image publish is [auth-service #20](https://github.com/Deepidoo-s-new-age/auth-service/pull/20) and [platform-api #61](https://github.com/Deepidoo-s-new-age/platform-api/pull/61), both green. No preview namespace exists yet |
+| 4 — deesplay | Concluded for `Deepidoo-s-new-age/deesplay` and the `auth-service` web job |
+| 5 — Architecture and security gates | Finish line met on the cloned repositories. The nightly preproduction smoke is still absent |
+| 6 — `helm-charts` and promotion | Concluded. Argo CD `v3.5.6` applies `main`. Both namespaces run the merged digests |
+| 7 — Preview environments | Open. Cluster manifests and both service image workflows are on `main`. No preview namespace exists yet. [Fixes before the first preview](#fixes-before-the-first-preview) are open pull requests |
 | 8 — Telemetry and uptime | Not started |
 | 9 — Supply chain | Not started |
 | 10 — SonarQube | Not started |
 | 11 — Agent loop | Not started |
 
-Callers pin several tags. `ci-v1.0.7` (`7e9c789`) is the architecture job. `ci-v1.0.6` (`669ec5a`) is the test and security jobs. `ci-v1.0.5` (`aeb5c98`) is the Vue caller. `ci-v1.0.3` (`1771088`) is the image job. `deepidoo-contracts` tests stay on `ci-v1.0.2`. `ci-v1.0.0` through `ci-v1.0.7` stay where they were tagged. `ci-workflows` `main` is `8a915cc` ([#9](https://github.com/Deepidoo-s-new-age/ci-workflows/pull/9)), which is not a tag. `ci-v1.0.4` writes the npm auth file but leaves `GITHUB_TOKEN` unset under `set -u`. `deepidoo-contracts` `v0.1.0` is `cab3c24`. `@deepidoo-s-new-age/deesplay` `1.0.1` is tag `v1.0.1` (`dc39440`).
+`ci-workflows` tags: `ci-v1.0.8` (`8a915cc`, [#9](https://github.com/Deepidoo-s-new-age/ci-workflows/pull/9)) adds the same-commit OpenAPI compare. It was tagged on 26 October, after the examples on `main` already named it. `ci-v1.0.7` (`7e9c789`) compares OpenAPI with the base commit. `ci-v1.0.6` (`669ec5a`) is the test and security jobs. `ci-v1.0.5` (`aeb5c98`) is the Vue caller. `ci-v1.0.3` (`1771088`) is the image job. `deepidoo-contracts` tests stay on `ci-v1.0.2`. `ci-v1.0.4` writes the npm auth file but leaves `GITHUB_TOKEN` unset under `set -u`. `ci-v1.0.9` is reserved for [ci-workflows #10](https://github.com/Deepidoo-s-new-age/ci-workflows/pull/10) and must be tagged on its merge commit. `deepidoo-contracts` `v0.1.0` is `cab3c24`. `@deepidoo-s-new-age/deesplay` `1.0.1` is tag `v1.0.1` (`dc39440`).
 
 ## Per repository
 
 | Repository | Last concluded phase | Stopped at |
 |---|---|---|
-| `ci-workflows` | 0 | Phase 5 workflows are tagged through `ci-v1.0.7` ([#8](https://github.com/Deepidoo-s-new-age/ci-workflows/pull/8)). [#9](https://github.com/Deepidoo-s-new-age/ci-workflows/pull/9) is on `main` and has no tag. Vue callers stay on `ci-v1.0.5`. Image callers stay on `ci-v1.0.3`. Phase 2 branch protection is still blocked by the Free plan |
-| `auth-service` | 6 | Image publish from `main` is on ([#14](https://github.com/Deepidoo-s-new-age/auth-service/pull/14)). The running image starts with `.venv/bin/uvicorn` ([#18](https://github.com/Deepidoo-s-new-age/auth-service/pull/18)). Phase 7 image workflow is [#20](https://github.com/Deepidoo-s-new-age/auth-service/pull/20), green, and unmerged. Adding `preview` on the pull request page publishes after that merge. Phase 2 branch protection remains blocked by the Free plan |
-| `platform-api` | 6 | Image publish from `main` is on ([#57](https://github.com/Deepidoo-s-new-age/platform-api/pull/57)). The running image starts with `.venv/bin/uvicorn` ([#59](https://github.com/Deepidoo-s-new-age/platform-api/pull/59)). Phase 7 image workflow is [#61](https://github.com/Deepidoo-s-new-age/platform-api/pull/61), green, and unmerged. Adding `preview` on the pull request page publishes after that merge. Phase 2 branch protection remains blocked by the Free plan |
-| `deepidoo-contracts` | 5 | Semgrep is on `main` ([#130](https://github.com/Deepidoo-s-new-age/deepidoo-contracts/pull/130), `7b1394c`). There is no HTTP API, so the architecture job is not called. Tag `v0.1.0` is unchanged. [#131](https://github.com/Deepidoo-s-new-age/deepidoo-contracts/pull/131) (drop `test-lib`) is still open. Phase 2 branch protection remains blocked by the Free plan |
+| `ci-workflows` | 5 | `main` is `8a915cc` = `ci-v1.0.8`. [#10](https://github.com/Deepidoo-s-new-age/ci-workflows/pull/10) (pin the validator, refresh the FastAPI example) is open and green |
+| `auth-service` | 6 | `main` is `91e9e8c` ([#20](https://github.com/Deepidoo-s-new-age/auth-service/pull/20), preview image workflow). [#21](https://github.com/Deepidoo-s-new-age/auth-service/pull/21) is open and green. Preproduction runs `b85aa3e`; the digest of `91e9e8c` waits in [helm-charts #16](https://github.com/Deepidoo-s-new-age/helm-charts/pull/16) |
+| `platform-api` | 6 | `main` is `0042463` ([#61](https://github.com/Deepidoo-s-new-age/platform-api/pull/61), preview image workflow). [#62](https://github.com/Deepidoo-s-new-age/platform-api/pull/62) is open and green. Preproduction runs `5e0f50c`; the digest of `0042463` waits in [helm-charts #17](https://github.com/Deepidoo-s-new-age/helm-charts/pull/17) |
+| `deepidoo-contracts` | 5 | Semgrep is on `main` ([#130](https://github.com/Deepidoo-s-new-age/deepidoo-contracts/pull/130), `7b1394c`). No HTTP API, so no architecture job. Tag `v0.1.0` unchanged. [#131](https://github.com/Deepidoo-s-new-age/deepidoo-contracts/pull/131) (drop `test-lib`) is still open |
+| `helm-charts` | 6 | `main` is `00de125` ([#15](https://github.com/Deepidoo-s-new-age/helm-charts/pull/15)). Argo CD applies it. [#18](https://github.com/Deepidoo-s-new-age/helm-charts/pull/18) is open and green. Head branches are now deleted after merge |
+| `deesplay` | 5 | Package `1.0.1` unchanged. Semgrep is on `main` ([#1](https://github.com/Deepidoo-s-new-age/deesplay/pull/1), `1100f3e`) |
+| `.github` | 5 | Holds this plan and `tools/validate_architecture.py` (`ce47fb1`). The pull request that records this status also adds CI for the validator tests |
 | `menuboards`, `deep_desk`, `scheduler`, `tickets`, `roadmap`, `epaper` | — | Stopped before phase 2. No shared caller. Left uncloned on purpose |
-| `messaging`, `call_me_maybe`, `converter` | — | Stopped before phase 2. The plan waits until these hold code, then copies a caller from `ci-workflows/examples/` |
-| `helm-charts` | 6 | `main` is `756ba7d`. Argo CD applies it. Deploy workflows are gone ([#12](https://github.com/Deepidoo-s-new-age/helm-charts/pull/12)). Cluster install is [docs/cluster.md](https://github.com/Deepidoo-s-new-age/helm-charts/blob/main/docs/cluster.md) ([#13](https://github.com/Deepidoo-s-new-age/helm-charts/pull/13)). Phase 7 manifests are on `main` ([#14](https://github.com/Deepidoo-s-new-age/helm-charts/pull/14)). The finish line waits on the two service image workflows and one labeled pull request |
-| `deesplay` | 5 | Package `1.0.1` is unchanged (`v1.0.1`, `dc39440`). Semgrep is on `main` ([#1](https://github.com/Deepidoo-s-new-age/deesplay/pull/1), `1100f3e`). `Deepidoo/deesplay` was left in place for the legacy repositories |
+| `messaging`, `call_me_maybe`, `converter` | — | Stopped before phase 2. A caller is copied from `ci-workflows/examples/` when they hold code |
 | `Deepidoo/deesplay` | — | Left untouched. Legacy repositories still depend on `@deepidoo/deesplay` |
-| `.github` | — | Holds this plan. `tools/validate_architecture.py` is on `main` ([#1](https://github.com/Deepidoo-s-new-age/.github/pull/1), `9cb93f8`, parser follow-up [#3](https://github.com/Deepidoo-s-new-age/.github/pull/3) `ce47fb1`). The architecture job clones it |
+
+## Rulesets waiting on the GitHub plan
+
+Saved, not enforced, on `auth-service`, `platform-api`, `deepidoo-contracts`, and `ci-workflows`: required pull request, required check `test / test` (strict; `lint` on `ci-workflows`), no force-push, no deletion, and code-owner review on `auth-service` and `deepidoo-contracts`.
+
+Still to add when the plan allows it:
+
+- `helm-charts`: required pull request, required check `lint`, and code-owner review. `CODEOWNERS` for `environments/production/` is in [#18](https://github.com/Deepidoo-s-new-age/helm-charts/pull/18). Without this ruleset, whoever merges a production pull request is its only reviewer.
+- `.github`: required check `test` once its CI is on `main`.
+- `deesplay`: required pull request and the Semgrep check.
+- A required reviewer on the `production` environment of `helm-charts` gates nothing under Argo CD, because no workflow deploys from it. The production gate is the `helm-charts` ruleset above.
+
+What the missing enforcement already allowed: eight commits went to `auth-service` `main` without a pull request on 16 and 19 October (`06a44df`, `f03523d`, `f117dba`, `0347196`, `21056c5`, `4e51fcb`, `45bf292`, `7b701bc`). Six of those `main` runs were red. The current `main` run (`91e9e8c`) is green.
+
+## Fixes before the first preview
+
+Found while checking phases 0 to 6 on 26 October. Each fix stays inside the plan.
+
+| Pull request | Fixes |
+|---|---|
+| [auth-service #21](https://github.com/Deepidoo-s-new-age/auth-service/pull/21), [platform-api #62](https://github.com/Deepidoo-s-new-age/platform-api/pull/62) | The promote job fetched `promote/<service>` without the auth header, so a push to an existing branch was rejected. That failed the `main` run of [auth-service #19](https://github.com/Deepidoo-s-new-age/auth-service/pull/19): image `sha256:577a31…` never reached preproduction. With #16 and #17 open, the next `main` push of either service would fail the same way. **Run workflow** on Preview now publishes the image; before, it only added a label GitHub ignores. Images move from floating `python:3.14-slim` to `python:3.12.15-slim-trixie` with `uv==0.12.23`, the versions CI tests. The architecture job moves to `ci-v1.0.8` |
+| [helm-charts #18](https://github.com/Deepidoo-s-new-age/helm-charts/pull/18) | `charts/preview-namespace` gives each preview a managed Namespace (deleted with the Application on close), the quota, and an egress NetworkPolicy that keeps previews out of `production`. Production reads the optional hand-made Secret `runtime-env`, so its `JWT_SECRET` can leave git. `CODEOWNERS` for production values. Rollback documented as a digest pull request, not `helm rollback`. Sweeper image pinned |
+| [ci-workflows #10](https://github.com/Deepidoo-s-new-age/ci-workflows/pull/10) | `architecture.yml` fetched the validator from the `.github` default branch, so a `.github` merge changed every caller's gate without a tag. It now fetches commit `ce47fb1`. The FastAPI example pins current tags and grants `packages: write` only to the image job. Tag `ci-v1.0.9` right after merge |
+| This `.github` pull request | CI for `tools/test_validate_architecture.py` (17 tests), which ran nowhere. This status |
+
+Done outside a pull request on 26 October: tag `ci-v1.0.8` on `ci-workflows` `8a915cc`, and **Automatically delete head branches** on `helm-charts`.
+
+Manual steps after [helm-charts #18](https://github.com/Deepidoo-s-new-age/helm-charts/pull/18) merges, from a machine with the cluster kubeconfig:
+
+1. Create Secret `runtime-env` in `production` with a random `JWT_SECRET`, then restart both deployments ([cluster.md](https://github.com/Deepidoo-s-new-age/helm-charts/blob/main/docs/cluster.md) section 2b).
+2. Delete the `sh.helm.release.v1.*` Secrets the helmfile installs left in `preproduction` and `production` (section 7).
+3. On the first preview, confirm that a preview pod cannot reach `postgres.production.svc.cluster.local:5432`. The NetworkPolicy works only if the cluster network plugin enforces it.
+
+## Debt and deviations from the plan
+
+Recorded here so the plan text stays the target:
+
+- **Contracts release.** The plan publishes `deepidoo-contracts` to GitHub Packages. GitHub Packages does not host Python, so the release is a git tag (phase 3).
+- **Apply path.** Phase 6 steps 4 and 9 are done in the order the plan allows: Argo CD replaced the Helmfile apply. The helmfiles remain only as a CI render check. Phase 7's "`helmfile destroy` on close" is implemented as an Argo CD pull-request generator whose Application finalizer deletes the namespace.
+- **Preview address.** Previews use `http://pr-<service>-<number>.preview.51.178.114.227.sslip.io`. The plan's `*.preview.<domain>` record, the wildcard certificate, and cert-manager are not in place. This belongs to phase 7.
+- **Fixture user.** Preview databases start empty, and no fixture user is seeded. This belongs to phase 7.
+- **Shared preview workflow.** The preview image build is a copy in each service, not a reusable workflow in `ci-workflows`. Move it there before a third service gets a preview.
+- **Secrets in git.** The Postgres password `deepidoo` and `JWT_SECRET` `change-me` are inert values in git for every namespace. `runtime-env` ([#18](https://github.com/Deepidoo-s-new-age/helm-charts/pull/18)) is the interim for production. SOPS or External Secrets is phase 9. Changing the Postgres password also needs `ALTER USER` on the existing volume.
+- **Cluster.** Preproduction and production run on the cluster whose kubeconfig is `configs/stress-test.yml`, next to the `tsm-*` and `new-age-load` namespaces.
+- **No migrations yet.** No migration runs: neither service has an Alembic command, and `charts/job` has no Argo CD Application.
+- **Baselines act as a waiver list.** Foundations have no `docs/module.yaml`, so their architecture baseline is used as a waiver list. `auth-service` added three `/v1/acl/modules` routes to it in `f117dba`.
+- **Renovate.** The GitHub App is not installed, so `renovate.json` opens nothing.
 
 ## What is already on `main`
 
 ### Phase 0 — `ci-workflows`
 
-Concluded. Workflows are on `main`, `ci.yml` is green, and `ci-v1.0.0` exists ([#1](https://github.com/Deepidoo-s-new-age/ci-workflows/pull/1)).
-
-Two later tags are also on `main`:
-
-- `ci-v1.0.1` ([#2](https://github.com/Deepidoo-s-new-age/ci-workflows/pull/2)) authenticates the `deepidoo-contracts` clone with Basic auth. Found while proving the `auth-service` caller.
-- `ci-v1.0.2` adds the phase 2 coverage ratchet to `python-service.yml` and `python-package.yml`.
+Concluded. Workflows are on `main`, `ci.yml` is green, and `ci-v1.0.0` exists ([#1](https://github.com/Deepidoo-s-new-age/ci-workflows/pull/1)). `ci-v1.0.1` ([#2](https://github.com/Deepidoo-s-new-age/ci-workflows/pull/2)) authenticates the contracts clone with Basic auth. `ci-v1.0.2` ([#3](https://github.com/Deepidoo-s-new-age/ci-workflows/pull/3)) adds the coverage ratchet.
 
 ### Phase 1 — callers
 
-Concluded for both repositories named in that phase. At the end of this phase the image job was `push: false` and no package existed. Phase 6 later publishes both images from `main`.
+Concluded for both repositories named in that phase. At the end of this phase the image job was `push: false`. Phase 6 later publishes both images from `main`.
 
 | Repository | Merged | `main` at the time |
 |---|---|---|
 | `auth-service` | [#6](https://github.com/Deepidoo-s-new-age/auth-service/pull/6) | `626bca2`. Push run [38410328373](https://github.com/Deepidoo-s-new-age/auth-service/actions/runs/38410328373) green. `docker.yml` removed. No `web` job |
 | `platform-api` | [#51](https://github.com/Deepidoo-s-new-age/platform-api/pull/51) | `20dae16`. Push run [38700625143](https://github.com/Deepidoo-s-new-age/platform-api/actions/runs/38700625143) green. `docker.yml` removed. Caller uses `working_directory: .` and `context: .` |
 
-## Phase 2, where it stopped
+### Phase 2 — callers and coverage
 
-The finish line is every non-empty New Age repository running the shared CI on pull requests. The line is still open: the uncloned repositories have no shared caller, and the saved `main` rulesets are not enforced. Image publish landed later, in phase 6, and that publish leaves this phase open.
-
-Done on `main` inside this phase:
-
-- `deepidoo-contracts` calls `python-package.yml` ([#127](https://github.com/Deepidoo-s-new-age/deepidoo-contracts/pull/127)).
-- The coverage ratchet is in the shared workflows at `ci-v1.0.2`.
-- The three callers pin that tag, store a coverage floor, and their `main` push is green.
+Concluded for the cloned repositories, with the ruleset exception above. Still open for the six uncloned repositories with code.
 
 | Repository | Merge | `main` push |
 |---|---|---|
-| `auth-service` | [#8](https://github.com/Deepidoo-s-new-age/auth-service/pull/8) `6dd8c18`. Floor `64.8`. `CODEOWNERS` for `@Deepidoo-s-new-age/devs` | [38706977417](https://github.com/Deepidoo-s-new-age/auth-service/actions/runs/38706977417) |
+| `auth-service` | [#8](https://github.com/Deepidoo-s-new-age/auth-service/pull/8) `6dd8c18`. Floor `64.8` at merge, `64.9` on `main` now. `CODEOWNERS` for `@Deepidoo-s-new-age/devs` | [38706977417](https://github.com/Deepidoo-s-new-age/auth-service/actions/runs/38706977417) |
 | `platform-api` | [#52](https://github.com/Deepidoo-s-new-age/platform-api/pull/52) `4aa99bc`. Floor `87.1` | [38706979751](https://github.com/Deepidoo-s-new-age/platform-api/actions/runs/38706979751) |
-| `deepidoo-contracts` | [#128](https://github.com/Deepidoo-s-new-age/deepidoo-contracts/pull/128) `8c6372c`. Floor `98.6`. `CODEOWNERS` for `@Deepidoo-s-new-age/devs` | [38706985686](https://github.com/Deepidoo-s-new-age/deepidoo-contracts/actions/runs/38706985686) |
+| `deepidoo-contracts` | [#127](https://github.com/Deepidoo-s-new-age/deepidoo-contracts/pull/127) caller, [#128](https://github.com/Deepidoo-s-new-age/deepidoo-contracts/pull/128) `8c6372c`. Floor `98.6`. `CODEOWNERS` for `@Deepidoo-s-new-age/devs` | [38706985686](https://github.com/Deepidoo-s-new-age/deepidoo-contracts/actions/runs/38706985686) |
 
-Not done, and blocking the finish line:
+### Phase 3 — git tag, cloned repositories
 
-- Enforcement of the `main` rulesets. They are saved on `auth-service`, `platform-api`, `deepidoo-contracts`, and `ci-workflows`. The ruleset API still returns the Free-plan refusal, and GitHub will not apply the rules until an organization owner moves `Deepidoo-s-new-age` to GitHub Team. The saved rules are: required pull request, required check `test / test` (strict; `lint` on `ci-workflows`), no force-push, no deletion, and a code-owner review on `auth-service` and `deepidoo-contracts`.
-- Shared CI on the other non-empty repositories. They were left uncloned.
-
-`CODEOWNERS` for `helm-charts` production values is still absent. The values files now contain digests.
-
-## Phase 3 — git tag, cloned repositories
-
-GitHub Packages does not host Python, so the release is the git tag. A contracts change reaches `auth-service` and `platform-api` only when their lockfiles move to a new tag. Their image jobs skip the contracts clone.
+GitHub Packages does not host Python, so the release is the git tag. Both service lockfiles pin `deepidoo-contracts` `v0.1.0` (`cab3c24`). Their image jobs skip the contracts clone.
 
 | Repository | What landed |
 |---|---|
-| `ci-workflows` | [#4](https://github.com/Deepidoo-s-new-age/ci-workflows/pull/4), tag `ci-v1.0.3` (`1771088`). `checkout_contracts: false` authenticates git for `uv sync` and passes BuildKit secret `github_token` |
-| `deepidoo-contracts` | [#129](https://github.com/Deepidoo-s-new-age/deepidoo-contracts/pull/129), tag `v0.1.0` (`cab3c24`). Release run [38708105137](https://github.com/Deepidoo-s-new-age/deepidoo-contracts/actions/runs/38708105137) green |
+| `ci-workflows` | [#4](https://github.com/Deepidoo-s-new-age/ci-workflows/pull/4), tag `ci-v1.0.3`. `checkout_contracts: false` authenticates git for `uv sync` and passes BuildKit secret `github_token` |
+| `deepidoo-contracts` | [#129](https://github.com/Deepidoo-s-new-age/deepidoo-contracts/pull/129), tag `v0.1.0`. Release run [38708105137](https://github.com/Deepidoo-s-new-age/deepidoo-contracts/actions/runs/38708105137) green |
 | `auth-service` | [#9](https://github.com/Deepidoo-s-new-age/auth-service/pull/9) `8e411da`. Main run [38708608432](https://github.com/Deepidoo-s-new-age/auth-service/actions/runs/38708608432) green |
 | `platform-api` | [#53](https://github.com/Deepidoo-s-new-age/platform-api/pull/53) `9bc07ad`. Main run [38708615186](https://github.com/Deepidoo-s-new-age/platform-api/actions/runs/38708615186) green |
 
-`renovate.json` in the two services proposes only `deepidoo-contracts` bumps. The Renovate GitHub App is not installed on the organization, so those files do not open pull requests yet.
+### Phase 4 — deesplay on GitHub Packages
 
-## Phase 4 — deesplay on GitHub Packages
-
-`Deepidoo/deesplay` stays where it is. `Deepidoo-s-new-age/deesplay` is a copy of branches `main` and `dev` only. The package name is `@deepidoo-s-new-age/deesplay`.
+`Deepidoo-s-new-age/deesplay` is a copy of branches `main` and `dev` of `Deepidoo/deesplay`. The package is `@deepidoo-s-new-age/deesplay`.
 
 | What | Where |
 |---|---|
-| Rename and release workflow | `a36efe4` on `main`, also on `dev`. Tag `v1.0.0` published `1.0.0` |
+| Rename and release workflow | `a36efe4`. Tag `v1.0.0` published `1.0.0` |
 | Source typechecks in a consuming app | `dc39440`. Tag `v1.0.1` published `1.0.1`. Release run [38712991821](https://github.com/Deepidoo-s-new-age/deesplay/actions/runs/38712991821) green |
-| Vue install auth | [#5](https://github.com/Deepidoo-s-new-age/ci-workflows/pull/5) `ci-v1.0.4`, then [#6](https://github.com/Deepidoo-s-new-age/ci-workflows/pull/6) `ci-v1.0.5` (`aeb5c98`) |
-| `auth-service` web job | [#10](https://github.com/Deepidoo-s-new-age/auth-service/pull/10) `1a83a47`. Main run [38715031428](https://github.com/Deepidoo-s-new-age/auth-service/actions/runs/38715031428): `web / web`, `test / test`, and `image / image` green. `run_build` is false. No frontend image |
+| Vue install auth | [#5](https://github.com/Deepidoo-s-new-age/ci-workflows/pull/5) `ci-v1.0.4`, then [#6](https://github.com/Deepidoo-s-new-age/ci-workflows/pull/6) `ci-v1.0.5` |
+| `auth-service` web job | [#10](https://github.com/Deepidoo-s-new-age/auth-service/pull/10) `1a83a47`. `run_build` is false. No frontend image |
 
-The caller `GITHUB_TOKEN` is denied `read_package` on `@deepidoo-s-new-age/deesplay`. The web job passes the existing `SCHEMAS_READ_TOKEN` as `packages_read_token`. The admin UI peers match the published ranges for Vue, Vue Router, Pinia, vue-i18n, and Vuetify. `frontend/.npmrc` sets the scope registry and `legacy-peer-deps` for the peers the UI does not install. `auth-service` `renovate.json` also allows deesplay bumps. The Renovate GitHub App is still not installed.
+The admin UI depends on `@deepidoo-s-new-age/deesplay` `1.0.1`, with no sibling alias in `vite.config.ts`. The web job passes `SCHEMAS_READ_TOKEN` as `packages_read_token`, because the caller `GITHUB_TOKEN` is denied `read_package`. `frontend/.npmrc` sets the scope registry, `legacy-peer-deps` (for the `pdfjs-dist` 6.x pin), and `min-release-age=7`.
 
-## Phase 5 — routes, OpenAPI, Semgrep
+### Phase 5 — routes, OpenAPI, Semgrep, imports
 
-The architecture job fails when a route is missing from `docs/module.yaml` and is not already listed in `docs/architecture-baseline.txt`. `auth-service` has 17 baselined gaps and `platform-api` has 92. Neither foundation has a module contract yet, so every current route is a known gap. A new prefix fails. `deepidoo-contracts` has no API package, so the script skips it. Foundations with no module contract keep their current routes in the baseline. Later phases do not clear those lines.
+The architecture job fails when a route is missing from `docs/module.yaml` and is not listed in `docs/architecture-baseline.txt`. `auth-service` has 20 baselined gaps (19 routes and `missing-module-yaml`), and `platform-api` has 92. Neither foundation has a module contract. Both committed `docs/openapi.json` files matched the generated spec on 26 October, so `ci-v1.0.8` does not turn the callers red; [auth-service #21](https://github.com/Deepidoo-s-new-age/auth-service/pull/21) and [platform-api #62](https://github.com/Deepidoo-s-new-age/platform-api/pull/62) are green on it.
 
-Callers pin `architecture.yml` at `ci-v1.0.7`. That tag regenerates OpenAPI and runs oasdiff 1.33.0 against `docs/openapi.json` from the pull request’s base commit, or from `HEAD^` on a push to `main`. [ci-workflows #9](https://github.com/Deepidoo-s-new-age/ci-workflows/pull/9) (`8a915cc`) also compares the generated spec with `docs/openapi.json` in the same commit. It is merged and not tagged, so the callers do not run that second compare.
+`python-service.yml` at `ci-v1.0.6` runs `lint-imports` when `[tool.importlinter]` is present. Route handlers may not import SQLAlchemy. `auth-service` also forbids `app.models` in handlers, and `platform-api` forbids `app.repositories`. Each service forbids importing the other through an empty dev stub, which the production image does not contain ([auth-service #12](https://github.com/Deepidoo-s-new-age/auth-service/pull/12), [platform-api #55](https://github.com/Deepidoo-s-new-age/platform-api/pull/55)). dependency-cruiser runs in the `auth-service` web job.
 
-`python-service.yml` at `ci-v1.0.6` runs `lint-imports` when `[tool.importlinter]` is present. Route handlers in both services may not import SQLAlchemy directly. `auth-service` also forbids `app.models`. `platform-api` also forbids `app.repositories`. Indirect imports through a service stay allowed.
-
-Semgrep 1.181.0 runs with `p/owasp-top-ten`, `p/python`, and `p/javascript`. The baseline is the pull request’s base commit, or `HEAD^` on a push to `main`. A finding that already exists there does not fail the job.
+Semgrep 1.181.0 runs `p/owasp-top-ten`, `p/python`, and `p/javascript` against the base commit, or `HEAD^` on `main`.
 
 | Repository | Merge | `main` push |
 |---|---|---|
-| `.github` | [#1](https://github.com/Deepidoo-s-new-age/.github/pull/1) `9cb93f8` | No workflow in this repository |
-| `ci-workflows` | [#7](https://github.com/Deepidoo-s-new-age/ci-workflows/pull/7) `669ec5a`. Tag `ci-v1.0.6` | Lint was green on the pull request ([38739626366](https://github.com/Deepidoo-s-new-age/ci-workflows/actions/runs/38739626366)) |
+| `.github` | [#1](https://github.com/Deepidoo-s-new-age/.github/pull/1) `9cb93f8`, parser follow-up [#3](https://github.com/Deepidoo-s-new-age/.github/pull/3) `ce47fb1` | No workflow until this pull request |
+| `ci-workflows` | [#7](https://github.com/Deepidoo-s-new-age/ci-workflows/pull/7) `ci-v1.0.6`, [#8](https://github.com/Deepidoo-s-new-age/ci-workflows/pull/8) `ci-v1.0.7`, [#9](https://github.com/Deepidoo-s-new-age/ci-workflows/pull/9) `ci-v1.0.8` | `ci.yml` green on `8a915cc` |
 | `auth-service` | [#11](https://github.com/Deepidoo-s-new-age/auth-service/pull/11) `2ffecdb` | [38740934316](https://github.com/Deepidoo-s-new-age/auth-service/actions/runs/38740934316) green |
 | `platform-api` | [#54](https://github.com/Deepidoo-s-new-age/platform-api/pull/54) `876c889` | [38740943465](https://github.com/Deepidoo-s-new-age/platform-api/actions/runs/38740943465) green |
 | `deepidoo-contracts` | [#130](https://github.com/Deepidoo-s-new-age/deepidoo-contracts/pull/130) `7b1394c` | Test [38740953222](https://github.com/Deepidoo-s-new-age/deepidoo-contracts/actions/runs/38740953222) and Semgrep [38740953570](https://github.com/Deepidoo-s-new-age/deepidoo-contracts/actions/runs/38740953570) green |
-| `deesplay` | [#1](https://github.com/Deepidoo-s-new-age/deesplay/pull/1) `1100f3e` | Semgrep [38740962330](https://github.com/Deepidoo-s-new-age/deesplay/actions/runs/38740962330) green. No new package tag |
+| `deesplay` | [#1](https://github.com/Deepidoo-s-new-age/deesplay/pull/1) `1100f3e` | Semgrep [38740962330](https://github.com/Deepidoo-s-new-age/deesplay/actions/runs/38740962330) green |
 
-Landed after that table:
+Not done: the nightly preproduction smoke (login, call a module, the module calls `platform-api`).
 
-- Cross-service import-linter is on `main` ([auth-service #12](https://github.com/Deepidoo-s-new-age/auth-service/pull/12), [platform-api #55](https://github.com/Deepidoo-s-new-age/platform-api/pull/55)). Each forbidden module is an empty dev stub. The production image does not install it.
-- Architecture callers pin `ci-v1.0.7` ([ci-workflows #8](https://github.com/Deepidoo-s-new-age/ci-workflows/pull/8)).
-- dependency-cruiser runs in the `auth-service` web job.
-- The nightly preproduction smoke is still absent. Preproduction itself now exists; the workflow was not added.
-- [deepidoo-contracts #131](https://github.com/Deepidoo-s-new-age/deepidoo-contracts/pull/131) is open. `test-lib` is still a dependency.
+### Phase 6 — charts and promotion
 
-## Phase 6 — charts and promotion
+Concluded. Preproduction and production are two namespaces on one cluster. Each runs Postgres `18.6`, Redis `7.4.2`, `auth-service`, and `platform-api`. On 26 October, Argo CD reported all nine Applications `Synced` and `Healthy`, and both namespaces ran the digests in the merged values files:
 
-Concluded. `helm-charts` `main` is `756ba7d`. Preproduction and production are two namespaces on the same cluster. Each namespace runs Postgres `18.6`, Redis `7.4.2`, `auth-service`, and `platform-api`. Pods in both namespaces were `Running` on 26 October 2026 with the digests below, which are also the digests in the merged values files.
+| Service | Digest | Built from |
+|---|---|---|
+| `auth-service` | `sha256:93ebaa5d643073b26f6725958c94cbbcec9503b8558085c8a113724948331496` | `b85aa3e` ([#18](https://github.com/Deepidoo-s-new-age/auth-service/pull/18)) |
+| `platform-api` | `sha256:000a61d007ef0ce4c32aa4fe310963a493bdd56bceea713c41ff9640bcb9d9d8` | `5e0f50c` ([#60](https://github.com/Deepidoo-s-new-age/platform-api/pull/60)) |
 
-| Service | Digest |
-|---|---|
-| `auth-service` | `sha256:93ebaa5d643073b26f6725958c94cbbcec9503b8558085c8a113724948331496` |
-| `platform-api` | `sha256:000a61d007ef0ce4c32aa4fe310963a493bdd56bceea713c41ff9640bcb9d9d8` |
+A push to `main` in a service publishes `ghcr.io/deepidoo-s-new-age/<service>:<git-sha>` (`push: true` only on `main`, `packages: write` on the image job) and opens or updates `Set the <service> preproduction digest` in `helm-charts`, using the repository secret `HELM_CHARTS_TOKEN`. Merging it makes Argo CD apply namespace `preproduction`. **Promote to production** ([#9](https://github.com/Deepidoo-s-new-age/helm-charts/pull/9)) copies the selected preproduction digests into one production pull request. [#10](https://github.com/Deepidoo-s-new-age/helm-charts/pull/10) and [#11](https://github.com/Deepidoo-s-new-age/helm-charts/pull/11) put production on the digests above.
 
-The migration job is off: neither service has an Alembic command. `auth-service` creates schema `auth` when the process starts. `platform-api` does not migrate on startup. One database, `deepidoo`, per namespace. Extra isolation is a schema.
+Argo CD `v3.5.6` in namespace `argocd` applies `main` ([#12](https://github.com/Deepidoo-s-new-age/helm-charts/pull/12)). The `preproduction` and `production` environments on `helm-charts` hold no secrets, and no service repository contains `kubectl`. The clone credential is the read-only deploy key `argocd-helm-charts`. The kubeconfig stays in gitignored `configs/`. Repeating the install is [docs/cluster.md](https://github.com/Deepidoo-s-new-age/helm-charts/blob/main/docs/cluster.md) ([#13](https://github.com/Deepidoo-s-new-age/helm-charts/pull/13)).
 
-A push to `main` in a service repository publishes `ghcr.io/deepidoo-s-new-age/<service>:<git-sha>` and opens a pull request that sets `environments/preproduction/<service>.values.yaml`. That job uses the repository secret `HELM_CHARTS_TOKEN` on `auth-service` and on `platform-api`. Merging that pull request puts the digest on `main`. Argo CD applies it to namespace `preproduction`.
-
-**Promote to production** ([#9](https://github.com/Deepidoo-s-new-age/helm-charts/pull/9)) is a manual workflow on `helm-charts`. Run it from `main` and tick the services to copy. One run reads those preproduction digests and opens one pull request. The organization allows Actions to create that pull request. [#10](https://github.com/Deepidoo-s-new-age/helm-charts/pull/10) and [#11](https://github.com/Deepidoo-s-new-age/helm-charts/pull/11) are the promotions that put production on the digests above. Merging a promotion pull request puts those digests on `main`. Argo CD applies them to namespace `production`. The Free plan still cannot require a reviewer on that environment.
-
-The finish line is met. Both namespaces run the digest recorded in the merged values, both run the same digest, and no service repository contains `kubectl`.
-
-Argo CD `v3.5.6` is installed in namespace `argocd` (non-HA upstream manifest) and applies `main`. The root Application `helm-charts` and the eight service Applications are Synced. [#12](https://github.com/Deepidoo-s-new-age/helm-charts/pull/12) removed the two deploy workflows. The GitHub environments `preproduction` and `production` hold no secrets. The cluster kubeconfig stays in gitignored `configs/`. The clone credential is the read-only deploy key `argocd-helm-charts`. Repeating the install is [docs/cluster.md](https://github.com/Deepidoo-s-new-age/helm-charts/blob/main/docs/cluster.md) ([#13](https://github.com/Deepidoo-s-new-age/helm-charts/pull/13)).
-
-`CODEOWNERS` for the production values is still absent. The nightly smoke workflow is still absent.
+The migration job is off: neither service has an Alembic command. `auth-service` creates schema `auth` on startup.
 
 ## Phase 7 — preview namespaces
 
-Open. The cluster side is on `helm-charts` `main` ([#14](https://github.com/Deepidoo-s-new-age/helm-charts/pull/14), `756ba7d`). AppProject `preview`, ApplicationSets `preview-auth-service` and `preview-platform-api`, and CronJob `preview-sweeper` are synced. Secret `preview-github` is in namespace `argocd`. No pull request carries the label `preview`, so no preview namespace exists.
+Open. On `main`:
 
-The image workflows are [auth-service #20](https://github.com/Deepidoo-s-new-age/auth-service/pull/20) and [platform-api #61](https://github.com/Deepidoo-s-new-age/platform-api/pull/61). Continuous integration on both is green, including Semgrep after the action refs were pinned to commits. A person adding `preview` on the pull request page publishes `ghcr.io/deepidoo-s-new-age/<service>:<head sha>`. **Run workflow** writes that label with `GITHUB_TOKEN`. GitHub ignores the `labeled` event from that token, so the button publishes no image. The guide on `main` still describes that button as a publish path. The correction is [helm-charts #15](https://github.com/Deepidoo-s-new-age/helm-charts/pull/15).
+- `helm-charts` ([#14](https://github.com/Deepidoo-s-new-age/helm-charts/pull/14), docs corrected in [#15](https://github.com/Deepidoo-s-new-age/helm-charts/pull/15)): AppProject `preview`, ApplicationSets `preview-auth-service` and `preview-platform-api`, and CronJob `preview-sweeper`. Secret `preview-github` was reported created in namespace `argocd`; this check did not read the cluster to confirm it.
+- [auth-service #20](https://github.com/Deepidoo-s-new-age/auth-service/pull/20) and [platform-api #61](https://github.com/Deepidoo-s-new-age/platform-api/pull/61), merged 26 October: adding the label `preview` on the pull request page publishes `ghcr.io/deepidoo-s-new-age/<service>:<head sha>`.
 
-A preview namespace is `pr-<service>-<number>`, with its own empty Postgres and Redis. `platform-api` calls `auth-service` in preproduction. The URL is `http://pr-<service>-<number>.preview.51.178.114.227.sslip.io`. The sweeper copies Secret `ghcr` from preproduction into the preview namespace and, once the namespace is 96 hours old, removes the label and deletes the Application. The Application finalizer deletes the namespace.
+A preview namespace is `pr-<service>-<number>`, with its own empty Postgres and Redis. `platform-api` calls `auth-service` in preproduction. The URL is `http://pr-<service>-<number>.preview.51.178.114.227.sslip.io`. The sweeper copies Secret `ghcr` from preproduction into each preview namespace and expires previews at 96 hours.
 
-The finish line is still open. A labeled pull request has not produced a URL, and closing one has not removed a namespace. That check waits until the two image workflows are on `main`.
+Next: merge [Fixes before the first preview](#fixes-before-the-first-preview), then label one pull request. The finish line is a labeled pull request that yields a URL, and a closed pull request whose namespace disappears.
 
 ## Phases not started
 
