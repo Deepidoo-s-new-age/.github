@@ -1,6 +1,6 @@
 # CI/CD progress — Deepidoo-s-new-age
 
-Status of [CICD-PLAN.md](CICD-PLAN.md) as of 26 October 2026, 13:15 UTC. Git and GitHub were read for this status. The cluster was not, so pod rollouts and the manual cluster steps are not confirmed here.
+Status of [CICD-PLAN.md](CICD-PLAN.md) as of 26 October 2026, 13:40 UTC. Git, GitHub, and the cluster were read for this status.
 
 A phase is concluded for a repository when that phase’s finish line is true for it. A later phase that is not started leaves the repository stopped at the last concluded phase.
 
@@ -19,7 +19,7 @@ How a change reaches preproduction and production is [helm-charts/docs/deploying
 | 4 — deesplay | Concluded for `Deepidoo-s-new-age/deesplay` and the `auth-service` web job |
 | 5 — Architecture and security gates | Finish line met on the cloned repositories. The nightly preproduction smoke is still absent |
 | 6 — `helm-charts` and promotion | Concluded. Argo CD `v3.5.6` applies `main`. Production values carry the digests promoted on 26 October. Preproduction values are newer; production moves only when **Promote to production** runs |
-| 7 — Preview environments | Open. Cluster manifests, both service image workflows, and the [fixes before the first preview](#fixes-before-the-first-preview) are on `main`. No preview namespace exists yet |
+| 7 — Preview environments | Open. A labeled pull request served a URL, and removing the label deleted the namespace. The fixture user is in open pull requests, and the real preview domain is still absent |
 | 8 — Telemetry and uptime | Not started |
 | 9 — Supply chain | Not started |
 | 10 — SonarQube | Not started |
@@ -32,12 +32,12 @@ How a change reaches preproduction and production is [helm-charts/docs/deploying
 | Repository | Last concluded phase | Stopped at |
 |---|---|---|
 | `ci-workflows` | 5 | `main` is `22a4d53` = `ci-v1.0.9` ([#10](https://github.com/Deepidoo-s-new-age/ci-workflows/pull/10), pin the validator, refresh the FastAPI example) |
-| `auth-service` | 6 | `main` is `40b71ff` ([#21](https://github.com/Deepidoo-s-new-age/auth-service/pull/21)), green. Its image is proposed for preproduction in [helm-charts #19](https://github.com/Deepidoo-s-new-age/helm-charts/pull/19). Preproduction values carry `91e9e8c` ([#20](https://github.com/Deepidoo-s-new-age/auth-service/pull/20)); production values carry `b85aa3e` ([#18](https://github.com/Deepidoo-s-new-age/auth-service/pull/18)) |
+| `auth-service` | 6 | `main` is `40b71ff` ([#21](https://github.com/Deepidoo-s-new-age/auth-service/pull/21)), green. Its image is proposed for preproduction in [helm-charts #19](https://github.com/Deepidoo-s-new-age/helm-charts/pull/19). Preproduction values carry `91e9e8c` ([#20](https://github.com/Deepidoo-s-new-age/auth-service/pull/20)); production values carry `b85aa3e` ([#18](https://github.com/Deepidoo-s-new-age/auth-service/pull/18)). [#22](https://github.com/Deepidoo-s-new-age/auth-service/pull/22) seeds the preview fixture user and is open |
 | `platform-api` | 6 | `main` is `84b790a` ([#62](https://github.com/Deepidoo-s-new-age/platform-api/pull/62)), green. Its image is proposed for preproduction in [helm-charts #20](https://github.com/Deepidoo-s-new-age/helm-charts/pull/20). Preproduction values carry `0042463` ([#61](https://github.com/Deepidoo-s-new-age/platform-api/pull/61)); production values carry `5e0f50c` ([#60](https://github.com/Deepidoo-s-new-age/platform-api/pull/60)) |
 | `deepidoo-contracts` | 5 | Semgrep is on `main` ([#130](https://github.com/Deepidoo-s-new-age/deepidoo-contracts/pull/130), `7b1394c`). No HTTP API, so no architecture job. Tag `v0.1.0` unchanged. [#131](https://github.com/Deepidoo-s-new-age/deepidoo-contracts/pull/131) (drop `test-lib`) is still open |
-| `helm-charts` | 6 | `main` is `ead14c6` ([#18](https://github.com/Deepidoo-s-new-age/helm-charts/pull/18)). Argo CD applies it. Preproduction digest pull requests [#19](https://github.com/Deepidoo-s-new-age/helm-charts/pull/19) and [#20](https://github.com/Deepidoo-s-new-age/helm-charts/pull/20) are open. Head branches are deleted after merge |
+| `helm-charts` | 6 | `main` is `ead14c6` ([#18](https://github.com/Deepidoo-s-new-age/helm-charts/pull/18)). Argo CD applies it. Preproduction digest pull requests [#19](https://github.com/Deepidoo-s-new-age/helm-charts/pull/19) and [#20](https://github.com/Deepidoo-s-new-age/helm-charts/pull/20) are open. [#21](https://github.com/Deepidoo-s-new-age/helm-charts/pull/21) turns the fixture flag on for the auth-service preview and is open. Head branches are deleted after merge |
 | `deesplay` | 5 | Package `1.0.1` unchanged. Semgrep is on `main` ([#1](https://github.com/Deepidoo-s-new-age/deesplay/pull/1), `1100f3e`) |
-| `.github` | 5 | Holds this plan and `tools/validate_architecture.py` (`ce47fb1`). The pull request that records this status also adds CI for the validator tests |
+| `.github` | 5 | Holds this plan and `tools/validate_architecture.py` (`ce47fb1`). CI for the validator tests is on `main` ([#7](https://github.com/Deepidoo-s-new-age/.github/pull/7)). The pull request that records the first preview updates this status |
 | `menuboards`, `deep_desk`, `scheduler`, `tickets`, `roadmap`, `epaper` | — | Stopped before phase 2. No shared caller. Left uncloned on purpose |
 | `messaging`, `call_me_maybe`, `converter` | — | Stopped before phase 2. A caller is copied from `ci-workflows/examples/` when they hold code |
 | `Deepidoo/deesplay` | — | Left untouched. Legacy repositories still depend on `@deepidoo/deesplay` |
@@ -57,7 +57,7 @@ What the missing enforcement already allowed: eight commits went to `auth-servic
 
 ## Fixes before the first preview
 
-Found while checking phases 0 to 6 on 26 October. Each fix stays inside the plan. All are merged except this `.github` pull request.
+Found while checking phases 0 to 6 on 26 October. Each fix stays inside the plan. All are merged.
 
 | Pull request | Fixes |
 |---|---|
@@ -68,11 +68,11 @@ Found while checking phases 0 to 6 on 26 October. Each fix stays inside the plan
 
 Done outside a pull request on 26 October: tags `ci-v1.0.8` on `ci-workflows` `8a915cc` and `ci-v1.0.9` on `22a4d53`, and **Automatically delete head branches** on `helm-charts`.
 
-Manual steps now that [helm-charts #18](https://github.com/Deepidoo-s-new-age/helm-charts/pull/18) is merged, from a machine with the cluster kubeconfig. None is confirmed done:
+Manual steps from [helm-charts #18](https://github.com/Deepidoo-s-new-age/helm-charts/pull/18), done on 26 October from the cluster kubeconfig:
 
-1. Create Secret `runtime-env` in `production` with a random `JWT_SECRET`, then restart both deployments ([cluster.md](https://github.com/Deepidoo-s-new-age/helm-charts/blob/main/docs/cluster.md) section 2b).
-2. Delete the `sh.helm.release.v1.*` Secrets the helmfile installs left in `preproduction` and `production` (section 7).
-3. On the first preview, confirm that a preview pod cannot reach `postgres.production.svc.cluster.local:5432`. The NetworkPolicy works only if the cluster network plugin enforces it.
+1. Secret `runtime-env` exists in `production`. Both deployments were restarted and came back ready. The value is not in git ([cluster.md](https://github.com/Deepidoo-s-new-age/helm-charts/blob/main/docs/cluster.md) section 2b).
+2. The `sh.helm.release.v1.*` Secrets were deleted from `preproduction` and `production` (section 7). None remain.
+3. From a pod in `pr-auth-service-22`, TCP to `postgres:5432` in that namespace opened. TCP to `postgres.production.svc.cluster.local:5432` and to `postgres.preproduction.svc.cluster.local:5432` timed out. The cluster runs Canal, so NetworkPolicy is enforced.
 
 ## Debt and deviations from the plan
 
@@ -80,8 +80,8 @@ Recorded here so the plan text stays the target:
 
 - **Contracts release.** The plan publishes `deepidoo-contracts` to GitHub Packages. GitHub Packages does not host Python, so the release is a git tag (phase 3).
 - **Apply path.** Phase 6 steps 4 and 9 are done in the order the plan allows: Argo CD replaced the Helmfile apply. The helmfiles remain only as a CI render check. Phase 7's "`helmfile destroy` on close" is implemented as an Argo CD pull-request generator whose Application finalizer deletes the namespace.
-- **Preview address.** Previews use `http://pr-<service>-<number>.preview.51.178.114.227.sslip.io`. The plan's `*.preview.<domain>` record, the wildcard certificate, and cert-manager are not in place. This belongs to phase 7.
-- **Fixture user.** Preview databases start empty, and no fixture user is seeded. This belongs to phase 7.
+- **Preview address.** Previews use `http://pr-<service>-<number>.preview.51.178.114.227.sslip.io`. The first preview answered `GET /health` with 200 on that name. The plan's `*.preview.<domain>` record, the wildcard certificate, and cert-manager are not in place: there is no domain and no DNS-01 credential to issue them with. This still belongs to phase 7.
+- **Fixture user.** [auth-service #22](https://github.com/Deepidoo-s-new-age/auth-service/pull/22) and [helm-charts #21](https://github.com/Deepidoo-s-new-age/helm-charts/pull/21) insert `admin@auth-demo.local` only when `SEED_FIXTURE_USER` is set and `givemenext_production.users` is empty. Both pull requests are open. The preview of #22 did not seed, because Argo CD reads values from `main`, which does not set the flag yet.
 - **Shared preview workflow.** The preview image build is a copy in each service, not a reusable workflow in `ci-workflows`. Move it there before a third service gets a preview.
 - **Secrets in git.** The Postgres password and `JWT_SECRET` are inert placeholder values in git for every namespace. `runtime-env` ([#18](https://github.com/Deepidoo-s-new-age/helm-charts/pull/18)) is the interim for production. SOPS or External Secrets is phase 9. Changing the Postgres password also needs `ALTER USER` on the existing volume.
 - **Cluster.** Preproduction and production run on the cluster whose kubeconfig is `configs/stress-test.yml`, next to the `tsm-*` and `new-age-load` namespaces.
@@ -180,13 +180,15 @@ The migration job is off: neither service has an Alembic command. `auth-service`
 
 Open. On `main`:
 
-- `helm-charts` ([#14](https://github.com/Deepidoo-s-new-age/helm-charts/pull/14), docs corrected in [#15](https://github.com/Deepidoo-s-new-age/helm-charts/pull/15)): AppProject `preview`, ApplicationSets `preview-auth-service` and `preview-platform-api`, and CronJob `preview-sweeper`. Secret `preview-github` was reported created in namespace `argocd`; this check did not read the cluster to confirm it.
+- `helm-charts` ([#14](https://github.com/Deepidoo-s-new-age/helm-charts/pull/14), docs corrected in [#15](https://github.com/Deepidoo-s-new-age/helm-charts/pull/15)): AppProject `preview`, ApplicationSets `preview-auth-service` and `preview-platform-api`, and CronJob `preview-sweeper`. Secret `preview-github` is present in namespace `argocd`. Its value was not read.
 - [helm-charts #18](https://github.com/Deepidoo-s-new-age/helm-charts/pull/18): each preview Application first syncs `charts/preview-namespace` (Namespace, quota, egress NetworkPolicy).
 - [auth-service #20](https://github.com/Deepidoo-s-new-age/auth-service/pull/20) and [platform-api #61](https://github.com/Deepidoo-s-new-age/platform-api/pull/61), corrected by [#21](https://github.com/Deepidoo-s-new-age/auth-service/pull/21) and [#62](https://github.com/Deepidoo-s-new-age/platform-api/pull/62): adding the label `preview` on the pull request page, or **Run workflow** on Preview with the pull request number, publishes `ghcr.io/deepidoo-s-new-age/<service>:<head sha>`. Fork pull requests are refused.
 
-A preview namespace is `pr-<service>-<number>`, with its own empty Postgres and Redis. `platform-api` calls `auth-service` in preproduction. The URL is `http://pr-<service>-<number>.preview.51.178.114.227.sslip.io`. The sweeper copies Secret `ghcr` from preproduction into each preview namespace and expires previews at 96 hours.
+A preview namespace is `pr-<service>-<number>`, with its own Postgres and Redis. `platform-api` calls `auth-service` in preproduction. The URL is `http://pr-<service>-<number>.preview.51.178.114.227.sslip.io`. The sweeper copies Secret `ghcr` from preproduction into each preview namespace and expires previews at 96 hours.
 
-Next: the [manual cluster steps](#fixes-before-the-first-preview), then label one pull request and check the NetworkPolicy from its namespace. The finish line is a labeled pull request that yields a URL, and a closed pull request whose namespace disappears.
+Checked on the cluster on 26 October. [auth-service #22](https://github.com/Deepidoo-s-new-age/auth-service/pull/22) was labeled `preview`. The image job [40331430430](https://github.com/Deepidoo-s-new-age/auth-service/actions/runs/40331430430) published `ghcr.io/deepidoo-s-new-age/auth-service:edf7cc739c12f4dae46cfd58db015cf57c6181fa`. Argo CD created Application `pr-auth-service-22`, Synced and Healthy, with Ingress host `pr-auth-service-22.preview.51.178.114.227.sslip.io`. `GET /health` returned 200 and `{"status":"ok"}`. Removing the label deleted the Application and the namespace. No preview namespace remains. The pull request stayed open, so this checked label removal, which uses the same generator as closing the pull request.
+
+Still open: merge [#22](https://github.com/Deepidoo-s-new-age/auth-service/pull/22) and [helm-charts #21](https://github.com/Deepidoo-s-new-age/helm-charts/pull/21), then label again and log in as the fixture user. A real `*.preview.<domain>` name and its wildcard certificate wait on a domain.
 
 ## Phases not started
 
