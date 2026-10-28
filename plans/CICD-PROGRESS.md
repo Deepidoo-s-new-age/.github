@@ -22,7 +22,7 @@ How a change reaches preproduction and production is [helm-charts/docs/deploying
 | 5 — Architecture and security gates | Finish line met on the cloned repositories. The nightly preproduction smoke is still absent |
 | 6 — `helm-charts` and promotion | Concluded. Argo CD `v3.5.6` applies `main`. Production values carry the digests promoted on 26 October. Preproduction values are newer; production moves only when **Promote to production** runs |
 | 7 — Preview environments | Concluded, with the DNS and certificate exception. A labeled pull request served a URL, and removing the label deleted the namespace. Closing or merging the pull request uses the same generator |
-| 8 — Telemetry and uptime | Open. Neither service exports telemetry. Step 1 is OpenTelemetry in `auth-service` and `platform-api`, sent to one collector |
+| 8 — Telemetry and uptime | Open. `deepilot` `v0.1.0` exists. The probe, the Tempo/Loki/Grafana charts, and both service callers are open pull requests |
 | 9 — Supply chain | Not started |
 | 10 — SonarQube | Not started |
 | 11 — Agent loop | Not started |
@@ -46,7 +46,7 @@ How a change reaches preproduction and production is [helm-charts/docs/deploying
 
 ## Rulesets waiting on the GitHub plan
 
-Saved, not enforced, on `auth-service`, `platform-api`, `deepidoo-contracts`, and `ci-workflows`: required pull request, required check `test / test` (strict; `lint` on `ci-workflows`), no force-push, no deletion, and code-owner review on `auth-service` and `deepidoo-contracts`.
+Saved, not enforced, on `auth-service`, `platform-api`, `deepidoo-contracts`, `ci-workflows`, and `deepilot`: required pull request, required check `test / test` (strict; `lint` on `ci-workflows`), no force-push, no deletion, and code-owner review on `auth-service` and `deepidoo-contracts`. `deepilot` has the same ruleset on `main`. GitHub still returns `403 Upgrade to GitHub Pro`, so it is not enforced. The note is also in the `deepilot` README.
 
 Still to add when the plan allows it:
 
@@ -211,7 +211,7 @@ Checked on the cluster on 26 October. [auth-service #22](https://github.com/Deep
 
 ## Phase 8 — telemetry and uptime
 
-Open. Neither service imports OpenTelemetry. No collector, Grafana, Loki, Tempo, or outside probe is installed.
+Open. `deepilot` `v0.1.0` is on `main` (`0fbef56`). It exports traces to Tempo and logs to Loki. Grafana reads those stores. The CI probe is [ci-workflows #11](https://github.com/Deepidoo-s-new-age/ci-workflows/pull/11) (`ci-v1.0.10`). The charts are [helm-charts #27](https://github.com/Deepidoo-s-new-age/helm-charts/pull/27). The callers are [auth-service #23](https://github.com/Deepidoo-s-new-age/auth-service/pull/23) and [platform-api #64](https://github.com/Deepidoo-s-new-age/platform-api/pull/64). None of that is merged, so neither service on `main` exports telemetry, and no collector or outside probe is installed.
 
 1. OpenTelemetry in `auth-service` and `platform-api`, then modules. Export traces, metrics, and logs to one collector.
 2. Grafana reads Prometheus or Mimir, Loki, and Tempo.
