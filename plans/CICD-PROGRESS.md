@@ -22,7 +22,7 @@ How a change reaches preproduction and production is [helm-charts/docs/deploying
 | 5 — Architecture and security gates | Finish line met on the cloned repositories. The nightly preproduction smoke is still absent |
 | 6 — `helm-charts` and promotion | Concluded. Argo CD `v3.5.6` applies `main`. Production values carry the digests promoted on 26 October. Preproduction values are newer; production moves only when **Promote to production** runs |
 | 7 — Preview environments | Concluded, with the DNS and certificate exception. A labeled pull request served a URL, and removing the label deleted the namespace. Closing or merging the pull request uses the same generator |
-| 8 — Telemetry and uptime | Open. Metrics, the Grafana connectors, and the Service dashboard are on `main`. A trace that includes a module waits until a module is deployed. Burn-rate rules for login and a content read are [helm-charts #37](https://github.com/Deepidoo-s-new-age/helm-charts/pull/37) |
+| 8 — Telemetry and uptime | Open. Metrics, the Grafana connectors, and the Service dashboard are on `main`. A trace that includes a module waits until a module is deployed. One alert per service, firing at its first server error, is [helm-charts #38](https://github.com/Deepidoo-s-new-age/helm-charts/pull/38) |
 | 9 — Supply chain | Not started |
 | 10 — SonarQube | Not started |
 | 11 — Agent loop | Not started |
@@ -219,7 +219,7 @@ Open. This section was revised on 29 October. The sections above are the 28 Octo
 2. Done. Grafana reads Prometheus, Loki, and Tempo.
 3. Done. The dashboard **Service** is the request rate, error rate, and latency for the selected service.
 4. Waiting on a module. No module service is deployed, so a trace that starts in a module cannot be checked yet. The call `platform-api` already makes, validating a module token at `auth-service`, sends the trace header: deepilot instruments httpx, and that client uses httpx. Leave this check until a module is deployed, then confirm one preproduction request is one trace across the services it touched.
-5. In progress, with Sloth rather than Pyrra. [helm-charts #37](https://github.com/Deepidoo-s-new-age/helm-charts/pull/37) generates burn-rate rules for login (`POST /v1/auth/login`) and a music-content read (`GET /v1/contents/music` and `GET /v1/contents/music/{id}`). A 5xx burns a 99.9% budget over 30 days. A rejected password and a missing content do not. Prometheus evaluates the alerts. Nothing pages them, because there is no Alertmanager. The module-action rule waits for the same reason as step 4.
+5. In progress. [helm-charts #37](https://github.com/Deepidoo-s-new-age/helm-charts/pull/37) loaded Sloth page and ticket rules for login and a content read. That pair is replaced by [helm-charts #38](https://github.com/Deepidoo-s-new-age/helm-charts/pull/38): one alert, **ServiceServerError**, with one firing row per `service_name`. The first 5xx in five minutes spends that service's budget, and a module gets the same row once it exports metrics. Prometheus evaluates the alert. Nothing pages it, because there is no Alertmanager.
 6. Not started. Gatus probes the journeys from outside the cluster. Preproduction and production have no Ingress for the two APIs, so those journeys have no public URL there. Preview Ingresses exist.
 
 Finish line: a preproduction request shows one trace across the services it touched, and an outside probe goes red when the ingress is down. The trace half waits on a deployed module.
