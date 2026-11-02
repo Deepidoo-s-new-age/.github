@@ -10,6 +10,8 @@ Les skills **orchestrent** un workflow ; elles ne remplacent pas les règles.
 
 | Skill | Déclencheur | Rôle |
 |---|---|---|
+| [setup-local](setup-local/SKILL.md) | `/setup-local` | Bootstrap workspace local (clone, hosts, Compose, ACL) + alerte repos **BEHIND** (pas de pull auto) |
+| [add-compose-service](add-compose-service/SKILL.md) | `/add-compose-service` | Ajouter un service au stack `local/` (compose, profiles, overlay DEV, hosts, doc) |
 | [new-module](new-module/SKILL.md) | `/new-module` | Nouveau **module métier New Age** → `docs/module.yaml` + README + boundary rule |
 | [new-project](new-project/SKILL.md) | `/new-project` | Projet **autonome** hors New Age → `project-context` + README (redirige vers new-module si New Age) |
 | [update-module-contract](update-module-contract/SKILL.md) | `/update-module-contract` | MAJ `docs/module.yaml` après changement de surface |
@@ -27,9 +29,11 @@ Options :
 ## Règle de choix
 
 ```
-Besoin New Age (module)  →  new-module
-Projet hors écosystème   →  new-project
-Surface déjà existante   →  update-module-contract
-Avant merge / audit      →  review-module
-Automation PR (dashboard)→  pr-automation + docs/PR-AUTOMATION.md
+Onboarding / stack local     →  setup-local
+Nouveau service dans Compose →  add-compose-service
+Besoin New Age (module)      →  new-module
+Projet hors écosystème       →  new-project
+Surface déjà existante       →  update-module-contract
+Avant merge / audit          →  review-module
+Automation PR (dashboard)    →  pr-automation + docs/PR-AUTOMATION.md
 ```

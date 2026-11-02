@@ -1,0 +1,22 @@
+# Fragment de référence — coller sous services: dans local/docker-compose.yml
+# Remplacer SHORT / SERVICE / HOSTNAME / PORTS / IMAGE / ENV.
+
+  # SERVICE_NAME:
+  #   <<: *app-common
+  #   profiles: ["SHORT", "apps", "full"]
+  #   container_name: na-SHORT-api
+  #   image: ${SHORT_IMAGE:-ghcr.io/deepidoo-s-new-age/REPO:main}
+  #   pull_policy: ${SHORT_PULL_POLICY:-missing}
+  #   ports:
+  #     - "${SHORT_HOST_PORT:-8002}:8000"
+  #   environment:
+  #     REDIS_URL: ${REDIS_URL:-redis://redis:6379/14}
+  #     AUTH_SERVICE_URL: ${AUTH_SERVICE_URL:-http://auth-service:8000}
+  #     JWT_SECRET: ${JWT_SECRET:-change-me}
+  #     JWT_ISSUER: ${JWT_ISSUER:-deepidoo-auth}
+  #     # + vars métier
+  #   labels:
+  #     - traefik.enable=true
+  #     - traefik.http.routers.SHORT.rule=Host(`HOSTNAME.${NEW_AGE_DOMAIN:-new-age.me}`)
+  #     - traefik.http.routers.SHORT.entrypoints=web
+  #     - traefik.http.services.SHORT.loadbalancer.server.port=8000

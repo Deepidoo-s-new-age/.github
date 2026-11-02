@@ -1,0 +1,18 @@
+# Hot-reload overlay for auth-service (local Dockerfile.dev + bind mounts).
+# Enabled by: make up … DEV=auth
+# Paths are relative to local/ (project dir = first -f compose file).
+#
+# Dockerfile.dev réécrit deepidoo-contracts → /contracts et deepilot → /deepilot
+# (editable). deepilot = lib OpenTelemetry, pas un service Compose.
+
+services:
+  auth-service:
+    image: na-auth-api:dev
+    pull_policy: never
+    build:
+      context: ../../auth-service/backend
+      dockerfile: Dockerfile.dev
+    volumes:
+      - ../../auth-service/backend/app:/app/app
+      - ../../contracts:/contracts
+      - ../../deepilot:/deepilot

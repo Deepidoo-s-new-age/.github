@@ -1,0 +1,14 @@
+# dir_name	git_clone_url
+# Foundations (Deepidoo-s-new-age)
+contracts	git@github.com:Deepidoo-s-new-age/deepidoo-contracts.git
+deepilot	git@github.com:Deepidoo-s-new-age/deepilot.git
+auth-service	git@github.com:Deepidoo-s-new-age/auth-service.git
+platform-api	git@github.com:Deepidoo-s-new-age/platform-api.git
+# Design system New Age (pas Deepidoo/deesplay legacy). auth-admin file: si pas de NODE_AUTH_TOKEN.
+deesplay	git@github.com:Deepidoo-s-new-age/deesplay.git
+scheduler	git@github.com:Deepidoo-s-new-age/scheduler.git
+# Modules / clients (autres orgs possibles)
+play_music_ai	git@github.com:Deepidoo/play_music_ai.git
+play	git@github.com:Deepidoo/play.git
+# Deployment
+helm-charts git@github.com:Deepidoo-s-new-age/helm-charts.git
