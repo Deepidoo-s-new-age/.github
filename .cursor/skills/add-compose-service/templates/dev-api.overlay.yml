@@ -1,0 +1,16 @@
+# Hot-reload overlay — enabled by: make up … DEV=SHORT
+# Paths are relative to local/ (project dir = first -f compose file).
+# Copy to local/overlays/dev-SHORT.yml and replace placeholders.
+#
+# Ne pas monter pyproject.toml / uv.lock si l’entrypoint les réécrit pour /contracts.
+
+services:
+  SERVICE_NAME:
+    image: na-SHORT-api:dev
+    pull_policy: never
+    build:
+      context: ../../REPO
+      dockerfile: Dockerfile.dev
+    volumes:
+      - ../../REPO/app:/app/app
+      - ../../contracts:/contracts

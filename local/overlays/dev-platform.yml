@@ -1,0 +1,20 @@
+# Hot-reload overlay for platform-api (local Dockerfile.dev + bind mounts).
+# Enabled by: make up … DEV=platform
+# Paths are relative to local/ (project dir = first -f compose file).
+#
+# Dockerfile.dev réécrit deepidoo-contracts → /contracts et deepilot → /deepilot
+# (editable), comme auth. Ne pas monter pyproject.toml / uv.lock (sed build-time).
+
+services:
+  platform-api:
+    image: na-platform-api:dev
+    pull_policy: never
+    build:
+      context: ../../platform-api
+      dockerfile: Dockerfile.dev
+    volumes:
+      - ../../platform-api/app:/app/app
+      - ../../platform-api/alembic:/app/alembic
+      - ../../platform-api/alembic.ini:/app/alembic.ini
+      - ../../contracts:/contracts
+      - ../../deepilot:/deepilot

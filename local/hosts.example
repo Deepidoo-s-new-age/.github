@@ -1,0 +1,13 @@
+# Add these lines to /etc/hosts (macOS/Linux) so Traefik can route by hostname.
+# Copy/paste manually, or from .github/:
+#   make hosts-print
+#   make hosts-install   # asks oui/yes before sudo — never silent
+#
+# Windows: C:\Windows\System32\drivers\etc\hosts
+
+127.0.0.1 pgadmin.new-age.me
+127.0.0.1 auth-service.new-age.me
+127.0.0.1 auth-admin.new-age.me
+127.0.0.1 platform-api.new-age.me
+127.0.0.1 grafana.new-age.me
+# 127.0.0.1 traefik.new-age.me

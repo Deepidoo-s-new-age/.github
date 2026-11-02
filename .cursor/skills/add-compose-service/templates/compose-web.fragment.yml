@@ -1,0 +1,28 @@
+# Fragment de référence — front Vite (pattern auth-admin).
+# Toujours build local ; pas d’image GHCR par défaut.
+
+  # SERVICE_NAME:
+  #   profiles: ["SHORT", "apps", "full"]
+  #   container_name: na-SHORT-web
+  #   image: na-SHORT-web:dev
+  #   pull_policy: never
+  #   build:
+  #     context: ../../REPO/frontend
+  #     dockerfile: Dockerfile.dev
+  #   working_dir: /workspace/REPO/frontend
+  #   environment:
+  #     API_PROXY: http://BACKEND_SERVICE:8000
+  #   volumes:
+  #     - ../../REPO:/workspace/REPO
+  #     - ../../deesplay:/workspace/deesplay   # si file: dep
+  #     - na_SHORT_node_modules:/workspace/REPO/frontend/node_modules
+  #   ports:
+  #     - "${SHORT_HOST_PORT:-5175}:5175"
+  #   depends_on:
+  #     - BACKEND_SERVICE
+  #   networks: [na]
+  #   labels:
+  #     - traefik.enable=true
+  #     - traefik.http.routers.SHORT-web.rule=Host(`HOSTNAME.${NEW_AGE_DOMAIN:-new-age.me}`)
+  #     - traefik.http.routers.SHORT-web.entrypoints=web
+  #     - traefik.http.services.SHORT-web.loadbalancer.server.port=5175
