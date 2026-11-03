@@ -123,6 +123,9 @@ Observabilité locale (alignée helm-charts / deepilot) :
 ```bash
 make up PROFILES="infra otel auth platform" DEV="auth platform"
 # UI : http://grafana.new-age.me  (admin / admin)
+# Dossier Deepidoo : dashboards Service / Errors / Uptime / Workloads (copie de helm-charts/charts/grafana/dashboards/)
+# Service/Errors : traffic HTTP sur auth + platform (otel-synthetic-traffic en profile apps/full) ; métriques OTLP ~60s
+# Uptime : blackbox → /health (compose). Workloads : vide en local (metrics K8s seulement)
 # Apps exportent via DEEPILOT_*_ENDPOINT → tempo:4318, loki:3100/otlp, prometheus:9090/api/v1/otlp
 ```
 

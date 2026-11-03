@@ -1,4 +1,5 @@
 # Local Prometheus + OTLP receiver (deepilot → /api/v1/otlp/v1/metrics).
+# Uptime dashboard: blackbox probes (aligned with helm preproduction externalProbes).
 global:
   scrape_interval: 60s
   evaluation_interval: 60s
@@ -17,3 +18,30 @@ scrape_configs:
   - job_name: prometheus
     static_configs:
       - targets: ["localhost:9090"]
+
+  - job_name: external-http
+    metrics_path: /probe
+    params:
+      module: [http_deepidoo_health]
+    static_configs:
+      - targets:
+          - http://auth-service:8000/health
+        labels:
+          service: auth-service
+      - targets:
+          - http://platform-api:8000/health
+        labels:
+          service: platform-api
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: blackbox-exporter:9115
+      - source_labels: [service]
+        target_label: service
+    metric_relabel_configs:
+      - source_labels: [__name__]
+        regex: probe_success|probe_duration_seconds
+        action: keep
