@@ -26,7 +26,7 @@ x-app-common: &app-common
 
 services:
   traefik:
-    image: traefik:v3.3
+    image: traefik:v3.6.6
     container_name: na-traefik
     profiles: ["infra", "full"]
     # Start after backends so the first Docker list already sees their labels
@@ -152,6 +152,17 @@ services:
     networks:
       - na
 
+  blackbox-exporter:
+    image: prom/blackbox-exporter:v0.25.0
+    container_name: na-blackbox
+    profiles: ["otel", "full"]
+    command:
+      - --config.file=/etc/blackbox/blackbox.yaml
+    volumes:
+      - ./otel/blackbox.yaml:/etc/blackbox/blackbox.yaml:ro
+    networks:
+      - na
+
   prometheus:
     image: prom/prometheus:v3.15.1
     container_name: na-prometheus
@@ -167,8 +178,31 @@ services:
       - na_prometheus:/prometheus
     ports:
       - "${PROMETHEUS_HTTP_PORT:-9090}:9090"
+    depends_on:
+      - blackbox-exporter
     networks:
       - na
+
+  # Keeps http_server_* OTLP metrics flowing for Service/Errors dashboards (export ~60s).
+  otel-synthetic-traffic:
+    image: curlimages/curl:8.12.1
+    container_name: na-otel-traffic
+    profiles: ["apps", "full"]
+    depends_on:
+      - auth-service
+      - platform-api
+    networks:
+      - na
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        set -e
+        while true; do
+          curl -sf "http://auth-service:8000/health" >/dev/null || true
+          curl -sf "http://platform-api:8000/health" >/dev/null || true
+          curl -sf "http://platform-api:8000/openapi.json" >/dev/null || true
+          sleep 30
+        done
 
   grafana:
     image: grafana/grafana:11.5.2
@@ -181,6 +215,8 @@ services:
       GF_USERS_DEFAULT_THEME: light
     volumes:
       - ./otel/grafana/datasources.yaml:/etc/grafana/provisioning/datasources/datasources.yaml:ro
+      # Dashboards: same JSON + provider as helm-charts/charts/grafana/dashboards/
+      - ./otel/grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
       - na_grafana:/var/lib/grafana
     ports:
       # 3001: avoid clash with legacy webapp-web on host :3000

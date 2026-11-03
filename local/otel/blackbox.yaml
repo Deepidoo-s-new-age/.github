@@ -1,0 +1,11 @@
+# Same module as helm-charts/charts/blackbox-exporter/config/blackbox.yaml
+modules:
+  http_deepidoo_health:
+    prober: http
+    timeout: 10s
+    http:
+      valid_http_versions: ["HTTP/1.1", "HTTP/2.0"]
+      preferred_ip_protocol: ip4
+      ip_protocol_fallback: true
+      fail_if_body_not_matches_regexp:
+        - '"status"\s*:\s*"ok"'
