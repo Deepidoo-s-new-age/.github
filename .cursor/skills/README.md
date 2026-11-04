@@ -13,10 +13,12 @@ Les skills **orchestrent** un workflow ; elles ne remplacent pas les règles.
 | [setup-local](setup-local/SKILL.md) | `/setup-local` | Bootstrap workspace local (clone, hosts, Compose, ACL) + alerte repos **BEHIND** (pas de pull auto) |
 | [add-compose-service](add-compose-service/SKILL.md) | `/add-compose-service` | Ajouter un service au stack `local/` (compose, profiles, overlay DEV, hosts, doc) |
 | [new-module](new-module/SKILL.md) | `/new-module` | Nouveau **module métier New Age** → `docs/module.yaml` + README + boundary rule |
+| [design-module](design-module/SKILL.md) | `/design-module` | Module en **mode design** → front only + `design_mode: frontend_only` (règle org DESIGN-MODE) |
 | [new-project](new-project/SKILL.md) | `/new-project` | Projet **autonome** hors New Age → `project-context` + README (redirige vers new-module si New Age) |
 | [update-module-contract](update-module-contract/SKILL.md) | `/update-module-contract` | MAJ `docs/module.yaml` après changement de surface |
 | [review-module](review-module/SKILL.md) | `/review-module` | Review drift contrat ↔ code |
 | [pr-automation](pr-automation/SKILL.md) | `/pr-automation` | PR auto : règles → YAML → review → Talkspirit |
+| [propose-pr](propose-pr/SKILL.md) | `Propose PR` / `Ouvre une PR` | Ouvre une PR front (branche `design/…`, no merge) — designers / produit |
 
 ## Installation locale
 
@@ -29,11 +31,13 @@ Options :
 ## Règle de choix
 
 ```
-Onboarding / stack local     →  setup-local
-Nouveau service dans Compose →  add-compose-service
-Besoin New Age (module)      →  new-module
-Projet hors écosystème       →  new-project
-Surface déjà existante       →  update-module-contract
-Avant merge / audit          →  review-module
-Automation PR (dashboard)    →  pr-automation + docs/PR-AUTOMATION.md
+Onboarding / stack local           →  setup-local
+Nouveau service dans Compose       →  add-compose-service
+Besoin New Age (module full-stack) →  new-module
+Design / maquettes UI seulement    →  design-module
+Projet hors écosystème             →  new-project
+Surface déjà existante             →  update-module-contract
+Avant merge / audit                →  review-module
+Automation PR (dashboard)          →  pr-automation + docs/PR-AUTOMATION.md
+Designer / produit : ouvrir une PR →  propose-pr
 ```

@@ -41,6 +41,7 @@ Dépôts : [deepidoo-contracts](https://github.com/Deepidoo-s-new-age/deepidoo-c
 | [Business module contract](rules/RULE-GLOBAL-MODULE-CONTRACT.mdc) | Always | Tous les dépôts |
 | [Module design mode](rules/RULE-GLOBAL-DESIGN-MODE.mdc) | Always | Tous les dépôts |
 | [Module production UI layout](rules/RULE-GLOBAL-MODULE-LAYOUT.mdc) | Always | Modules métier (shell / `frontend-web` — pas Play) |
+| [Scheduler (job planning)](rules/RULE-GLOBAL-SCHEDULER.mdc) | Always | Dépôt `scheduler`, plannings Celery, workers modules |
 | [Identity and authorization](rules/RULE-GLOBAL-IDENTITY-AUTHORIZATION.mdc) | Intelligent/file-scoped | `**/*.{py,ts,tsx,vue,js,mjs,mts,csv,yaml,yml}` |
 | [API contracts and data boundaries](rules/RULE-GLOBAL-API-DATA-BOUNDARIES.mdc) | Intelligent/file-scoped | `**/*.{py,ts,tsx,vue,js,mjs,mts}` |
 | [Production frontend integration](rules/RULE-GLOBAL-FRONTEND-INTEGRATION.mdc) | Intelligent/file-scoped | `**/*.{ts,tsx,vue,js,scss,css}` |

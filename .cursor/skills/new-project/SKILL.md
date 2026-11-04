@@ -25,7 +25,8 @@ Avant Phase 1, demander :
 
 | Réponse | Action |
 |---|---|
-| Oui | Arrêter cette skill et exécuter **`new-module`** |
+| Oui, full-stack | Arrêter cette skill et exécuter **`new-module`** |
+| Oui, design / UI seulement | Arrêter cette skill et exécuter **`design-module`** |
 | Non / projet autonome hors New Age | Continuer ici |
 
 Ne pas inventer un `docs/module.yaml` New Age depuis cette skill.

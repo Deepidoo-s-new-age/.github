@@ -1,0 +1,91 @@
+---
+description: Scheduler service — Celery Beat planning, Redis broker, module workers (not job runtime).
+alwaysApply: true
+---
+# Rule name: Scheduler (New Age job planning)
+
+
+## Rule
+
+The **`scheduler`** repository is the **New Age job planner**. It **defines** when to
+enqueue work and **publishes** Celery messages to **Redis**. It does **not** run
+business module code.
+
+Read `scheduler/docs/module.yaml` and `scheduler/README.md` before changing scheduling
+behavior, Helm, or cross-module cron/interval jobs.
+
+### What scheduler owns
+
+| Concern | Owner |
+|---------|--------|
+| CRUD plannings (interval, periodic/crontab, one_time) | **scheduler** API `GET/POST /scheduler`, `GET/PUT/DELETE /scheduler/{schedule_name}` |
+| Persisted Beat schedules | **scheduler** PostgreSQL (`sqlalchemy-celery-beat` tables) |
+| Single **Celery Beat** process publishing at due time | **scheduler** deployment |
+| **Redis broker** (db 0 by convention in docs) | **scheduler** infra (shared URL for Beat + workers) |
+| Admin UI for plannings | **scheduler** `frontend/` (operator tool — not a product module shell) |
+
+### What scheduler does not own
+
+- **Task implementation** — lives in the **business module** (or its worker process).
+- **Worker processes** for module queues — each module (or its chart) runs Celery
+  workers with `-Q <queue>` pointing at the **same broker URL** as scheduler.
+- **JWT issuance / Casbin** — **auth-service**; scheduler API **validates** user JWT
+  via `deepidoo-contracts` and scopes `scheduler:read`, `scheduler:write`, `scheduler:delete`.
+- **Revoking in-flight work** — deleting a planning stops **future** publishes only.
+- **Play / platform-api** horaires métier — do not conflate with Celery plannings unless
+  explicitly integrated via module workers.
+
+### Integration contract (modules)
+
+When a module needs **deferred or recurring background work**:
+
+1. Implement Celery tasks **in the module repo** (or dedicated worker image for that module).
+2. Register **`task_name`** strings that Beat will send (must exist on the worker app).
+3. Run workers with **`-Q`** matching the planning’s **`queue`** field (POC names:
+   `echo`, `ping`, `writer`; production = module-specific queue names).
+4. Set module worker **`BROKER_URL`** (or equivalent) to the **scheduler Redis**, including
+   cross-cluster cases documented in `scheduler/docs/images/`.
+5. Create/update plannings via **scheduler HTTP API** (or its UI) — do not write Beat
+   rows from module Postgres or duplicate planning tables in module schemas.
+
+**Never** import `scheduler` Python package into a module backend for business logic.
+**Never** enqueue module-only jobs by embedding Beat inside a business module unless
+architecture explicitly replaces scheduler (requires ADR / approval).
+
+### Planning kinds (API)
+
+- **`interval`** — `every` + `period` (`days` | `hours` | `minutes` | `seconds` | `microseconds`).
+- **`periodic`** — crontab fields + `timezone` (default UTC).
+- **`one_time`** — single fire; fields for other kinds are rejected.
+
+Validate payloads against scheduler schemas; do not bypass with raw SQL on Beat tables
+from other services.
+
+### Dependency direction
+
+```
+operators → scheduler API → Postgres (plannings)
+                ↓
+         Celery Beat → Redis broker → module Celery workers (task code)
+```
+
+Modules depend on **scheduler infra** (broker URL, optional API to register jobs).
+Scheduler does **not** depend on module code at build time.
+
+### Agents — before proposing changes
+
+1. Is the work **planning/broker/Beat/UI**? → **`scheduler`** repo.
+2. Is the work **what the job does**? → **target module** (+ worker deploy).
+3. Does `queue` + `task_name` match a **real worker** configuration?
+4. Are auth scopes and JWT validation preserved on scheduler API changes?
+5. Document blast radius: wrong queue/task silently drops work; Beat is **single replica**.
+
+### Local / ops pointers
+
+- API: `uv run uvicorn scheduler.api.app:app` (see `scheduler/.env.example`).
+- Beat: `celery beat` with `DatabaseScheduler` (see README).
+- Front: `scheduler/frontend`, `VITE_API_BASE_URL` → API `/scheduler`.
+- Helm: `scheduler/helmfiles/` (namespace `scheduler`).
+
+This rule complements **RULE-GLOBAL-ECOSYSTEM-ARCHITECTURE** and **RULE-GLOBAL-MODULE-CONTRACT**;
+scheduler is a **shared platform service**, not a replaceable copy-paste inside each module.

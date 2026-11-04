@@ -12,6 +12,9 @@ alwaysApply: true
 - `contracts` owns shared data contracts and user-token validation; it is not a runtime service.
 - `auth-service` exclusively owns login, JWT issuance, role bindings and ACL evaluation.
 - `platform-api` owns shared platform/core resources and exposes them through `/v1/*`.
+- `scheduler` owns **Celery Beat plannings**, the **Redis broker** for published jobs, and
+  the operator API/UI for CRUD plannings — not business task code. Module workers consume
+  queues; see **RULE-GLOBAL-SCHEDULER**.
 - A business module owns one independently deployable business capability: its API, its storage and its own production frontend.
 - `play` is one production web client, not the single entry point for every capability. Inside `play`, the dependency direction is `play` → `playdoo` → `deesplay`.
 - `play` business UI and routes belong in `play/packages/playdoo`; the `play` package remains a thin host. This applies to `play` only, not to module frontends.
