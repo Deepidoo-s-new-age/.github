@@ -21,7 +21,7 @@ Ne pas recréer de second dossier de règles ni de `RULE-GLOBAL-*.md` à la raci
 |---|---|
 | [Architecture](ARCHITECTURE.md) | Ordre des services, fondations, flux d’authentification |
 | [Catalogue des règles](RULES-CATALOG.md) | Nom, contenu, mode d’application et globs de chaque règle |
-| [Skills d’équipe](../.cursor/skills/README.md) | `/new-module`, `/new-project`, `/update-module-contract`, `/review-module` |
+| [Skills d’équipe](../.cursor/skills/README.md) | `/new-module`, `/design-module`, `/new-project`, `/update-module-contract`, `/review-module` |
 | [Validation CI future](CI-CONTRACT-VALIDATION.md) | Contrôles envisagés sur contrats, routes et scopes |
 | [Template de contrat module](https://github.com/Deepidoo-s-new-age/deepidoo-contracts/blob/main/docs/module-contract.TEMPLATE.yaml) | Forme YAML partagée (dans `contracts`) |
 | [Contrat Play Music AI](https://github.com/Deepidoo/play_music_ai/blob/main/docs/module.yaml) | Contrat rempli, dans le dépôt du module |
@@ -39,6 +39,8 @@ Dépôts : [deepidoo-contracts](https://github.com/Deepidoo-s-new-age/deepidoo-c
 | [Ecosystem architecture](rules/RULE-GLOBAL-ECOSYSTEM-ARCHITECTURE.mdc) | Always | Tous les dépôts |
 | [Language and stack](rules/RULE-GLOBAL-STACK.mdc) | Always | Tous les dépôts |
 | [Business module contract](rules/RULE-GLOBAL-MODULE-CONTRACT.mdc) | Always | Tous les dépôts |
+| [Module design mode](rules/RULE-GLOBAL-DESIGN-MODE.mdc) | Always | Tous les dépôts |
+| [Module production UI layout](rules/RULE-GLOBAL-MODULE-LAYOUT.mdc) | Always | Modules métier (shell / `frontend-web` — pas Play) |
 | [Identity and authorization](rules/RULE-GLOBAL-IDENTITY-AUTHORIZATION.mdc) | Intelligent/file-scoped | `**/*.{py,ts,tsx,vue,js,mjs,mts,csv,yaml,yml}` |
 | [API contracts and data boundaries](rules/RULE-GLOBAL-API-DATA-BOUNDARIES.mdc) | Intelligent/file-scoped | `**/*.{py,ts,tsx,vue,js,mjs,mts}` |
 | [Production frontend integration](rules/RULE-GLOBAL-FRONTEND-INTEGRATION.mdc) | Intelligent/file-scoped | `**/*.{ts,tsx,vue,js,scss,css}` |

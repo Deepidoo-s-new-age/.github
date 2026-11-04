@@ -12,6 +12,8 @@ alwaysApply: true
 - The shared empty shape lives in **`contracts`**: `docs/module-contract.TEMPLATE.yaml`. Copy it into a new module; never store a filled module contract in `contracts`.
 - The local workspace folder holding the clones is not a Git repository. Do not put the canonical contract there.
 - Read `{module-repo}/docs/module.yaml` before editing that module or integrating it into `play`, `auth-service`, `platform-api` or Helm.
+- Respect top-level `design_mode`: when `frontend_only`, follow **RULE-GLOBAL-DESIGN-MODE** (frontend/docs only). Omit or `null` = normal full-stack work.
+- Module production UI (`frontend-web/` shell, home stage, theme): follow **RULE-GLOBAL-MODULE-LAYOUT** (not Play).
 - The contract answers: what the module is for, who uses it, which UI and API groups exist, who may call them, which files to edit, which data it owns, and what it must not touch.
 - Every backend `route_groups` entry MUST declare `prefix`, `purpose` (one or two sentences), `actors`, `access`, and `source`. Add `downstream` when the group calls another service.
 - Every frontend `routes` entry MUST declare `path`, `purpose` (one or two sentences), `actors`, `api_groups`, and `source`.

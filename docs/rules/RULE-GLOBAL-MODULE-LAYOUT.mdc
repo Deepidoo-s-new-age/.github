@@ -1,0 +1,142 @@
+---
+description: Module production UI — shared shell, home stage, typography (DeepiVoice reference). Not Play.
+alwaysApply: true
+---
+# Rule name: Module production UI layout
+
+
+## Rule
+
+New Age **business modules** share one **production UI layout** (sidebar shell, home
+orange stage, inner page headers, spacing tokens). **Play is out of scope** — it uses
+`play` → `playdoo` → `deesplay`, not this module shell.
+
+Before creating or editing module **UI chrome** (shell, home/dashboard header, global
+theme, login shell), read the reference implementation and align structure and tokens —
+do not invent a parallel layout (e.g. React + Tailwind dashboard, dark sidebar, extra
+page gutters).
+
+### Scope — applies when
+
+- The repository has a filled **`docs/module.yaml`** (business module), **or**
+- Paths under **`frontend-web/`**, module **`components/AppShell.vue`** (or
+  `components/layout/AppShell.vue`), module **home/dashboard** views, module
+  **`assets/theme.css`** / global layout CSS, **DeepiKiosk** `views/*.ejs` +
+  `public/deepi.css`.
+
+### Scope — does not apply
+
+- **`play`**, **`playdoo`**, standalone **`deesplay`** (design system only).
+- **`auth-service/frontend`** (ACL admin — not a product module shell).
+- **`helm-charts`**, **`contracts`**, **`platform-api`**, backends without UI.
+- Legacy **`frontend/`** (non–`frontend-web`) in a module — **do not extend**; migrate
+  or leave deprecated unless explicitly asked.
+
+### Reference (canonical)
+
+| Role | Location |
+|------|----------|
+| **Primary reference** | `deepivoice/frontend-web` — `AppShell.vue`, `HomeView.vue`, `assets/theme.css` |
+| **Documented parity** | `deepiflow/frontend-web/docs/deepivoice-layout-parity.md` (Flow ↔ Voice; reuse tokens for other modules) |
+| **Non-Vue module** | `deepikiosk` — same semantics in `public/deepi.css` (`.dv-*`), `views/home.ejs`; Cursor rule `no-display-font.mdc` |
+
+When two modules disagree, **DeepiVoice** wins for shell/home structure unless the user
+names an approved product exception in the task.
+
+### Stack
+
+- Production client = **`frontend-web/`**: Vue 3 + TypeScript + Vite + Vuetify +
+  **`@deepidoo/deesplay`** (theme **LIGHT**, `globals.scss`, `Deepi*` primitives).
+- **Typography**: **Inter only** (`400–700` weights in `index.html`). No Syne or other
+  display/geometric fonts in module UI, email, or comments.
+- Do **not** use **`DeepiDashboard`** (Play widget board) for module home/shell — module
+  home uses the **`.stage`** pattern below, not the dashboard grid component.
+
+### Application shell
+
+- Sidebar width **`248px`** (`--sidebar-w` or equivalent).
+- Main content padding: **`1.35rem 1.5rem 2rem`** (top / horizontal / bottom).
+- Mobile (≈ **`max-width: 900px`**): main **`1rem`**, bottom nav if the reference module uses it.
+- **No extra horizontal gutters** in views (no ad-hoc `40px` page margins) — lateral
+  spacing comes from the shell only.
+- Wordmark: **`Deepi<span class="brand-{module}">Name</span>`** in sidebar (class name
+  matches module branding, e.g. `brand-voice`, `brand-flow`, `brand-ads`).
+
+Wrap routed content in **`AppShell`** (or Kiosk equivalent); routes like `/login` and
+player fullscreen may use **`bare`** / no shell — follow the reference module.
+
+### Home / dashboard (orange stage)
+
+Use the **same DOM skeleton** as DeepiVoice `HomeView.vue`:
+
+```html
+<div class="home | page-stack page-stack--home">  <!-- column; gap 1.75rem -->
+  <header class="stage">
+    <div class="stage-glow" aria-hidden="true" />
+    <div class="stage-grid" aria-hidden="true" />
+    <div class="stage-copy">
+      <p class="kicker">Deepi<span class="brand-*">Module</span></p>
+      <h1>…</h1>
+      <p class="lede">…</p>
+    </div>
+    <div class="stage-viz">… module-specific viz …</div>
+  </header>
+  <section class="tiles | …">…</section>
+</div>
+```
+
+Stage tokens (match reference CSS):
+
+| Token | Value |
+|-------|--------|
+| `min-height` | `clamp(240px, 32vh, 340px)` |
+| `padding` | `clamp(1.5rem, 3.5vw, 2.5rem) clamp(1.35rem, 3vw, 2.25rem)` |
+| `border-radius` | `20px` |
+| Column gap | `1.5rem` |
+
+Module-specific content belongs in **`.stage-viz`** and tiles — not a different header
+pattern.
+
+### Inner pages (no orange stage)
+
+```html
+<div class="page-stack | vault">   <!-- gap 1.25rem -->
+  <header class="hero-head">       <!-- padding-top 0.4rem -->
+    <p class="kicker">…</p>
+    <h1>…</h1>
+    <p class="lede">…</p>
+  </header>
+  …
+</div>
+```
+
+Shared typography classes (from module `theme.css` / reference):
+
+- **`.kicker`**: ~0.72rem, uppercase, letter-spacing ~0.18em
+- **`.lede`**: ~0.95rem, margin-top ~0.7rem
+- **`.hero-head h1` / `.stage h1`**: Inter, weight 700, no arbitrary display font
+
+### Buttons (filters / primary)
+
+Align with DeepiVoice `theme.css`: secondary `.btn` (min-height 32px, radius 8px);
+`.btn-primary` pill (min-height 40px); hover primary uses **primary-700**, not lift-only
+effects unless reference module does.
+
+### Docker / local dev
+
+Module UI for humans = **`frontend-web`** (Vue). Do not point compose/README “UI” at
+legacy **`frontend/`** (React) for New Age module work unless the user explicitly maintains
+that stack.
+
+### Product exceptions
+
+Document in code when intentionally diverging (e.g. DeepiFlow floating search on
+Discover, mini-player, immersive routes). **Do not** treat exceptions as a new global layout.
+
+### Agent checklist (before finishing UI work)
+
+1. Confirmed repo is a **module** (`docs/module.yaml`), not **Play**.
+2. Shell spacing and sidebar match reference (248px / 1.35rem / 1.5rem).
+3. Home uses **`.stage`** tree; inner pages use **`.hero-head`** + **`.page-stack`**.
+4. **Inter** only; Deesplay LIGHT theme wired.
+5. No new parallel UI library or legacy React shell for production module paths.

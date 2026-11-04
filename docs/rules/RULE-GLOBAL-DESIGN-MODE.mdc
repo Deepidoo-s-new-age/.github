@@ -1,0 +1,41 @@
+---
+description: Design mode — if docs/module.yaml has design_mode frontend_only, restrict work to frontend/UI.
+alwaysApply: true
+---
+# Rule name: Module design mode
+
+
+## Rule
+
+Before editing a New Age **business module**, read that module's `docs/module.yaml`
+(if it exists) and check the top-level field `design_mode`.
+
+### When `design_mode` is `frontend_only`
+
+The module is in **UI/UX design** phase. Apply all of the following:
+
+- Work **only** on `frontend-web/` (and design docs under `docs/`, e.g. `ux-design.md`).
+- Allowed: Vue/TS screens, routes, layout, Deesplay/`Deepi*` usage, mock data,
+  client stubs, visual polish, accessibility, i18n strings, UX copy.
+- **Forbidden without an explicit user request to leave design mode**:
+  - any change under `backend/` (create or edit);
+  - FastAPI routes, SQLAlchemy models, repositories, migrations, Redis;
+  - registering scopes or module identity in `auth-service`;
+  - changing `platform-api`, `contracts` runtime packages, or Helm for this module;
+  - inventing real persistence or treating mocks as production APIs.
+- Keep `docs/module.yaml` honest: frontend routes may list `api_groups` as
+  **mock / à venir**; do not present backend as implemented.
+- If the user asks for backend or full-stack work, **stop** and ask them to set
+  `design_mode` to `null` (or remove it) and continue with `/new-module` or normal
+  implementation — do not silently implement backend while the flag is set.
+
+### When `design_mode` is absent, `null`, or any other value
+
+Normal New Age rules apply (full stack allowed per other RULE-GLOBAL-* rules).
+
+### Scope
+
+- Applies to **module repositories** that own a filled `docs/module.yaml`.
+- Does **not** apply to foundations (`contracts`, `auth-service`, `platform-api`),
+  `play`, `deesplay`, or `helm-charts` unless that repo's own `docs/module.yaml`
+  sets `design_mode: frontend_only`.
