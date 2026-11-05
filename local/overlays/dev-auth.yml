@@ -4,6 +4,7 @@
 #
 # Dockerfile.dev réécrit deepidoo-contracts → /contracts et deepilot → /deepilot
 # (editable). deepilot = lib OpenTelemetry, pas un service Compose.
+# Alembic monté pour : docker exec na-auth-api uv run alembic upgrade head
 
 services:
   auth-service:
@@ -14,5 +15,7 @@ services:
       dockerfile: Dockerfile.dev
     volumes:
       - ../../auth-service/backend/app:/app/app
+      - ../../auth-service/backend/alembic:/app/alembic
+      - ../../auth-service/backend/alembic.ini:/app/alembic.ini
       - ../../contracts:/contracts
       - ../../deepilot:/deepilot

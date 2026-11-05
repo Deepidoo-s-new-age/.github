@@ -24,6 +24,7 @@ if [ -z "$QUERY" ]; then
   echo "  infra     traefik | postgres | redis | pgadmin"
   echo "  otel      tempo | loki | prometheus | grafana"
   echo "  apps      auth-service (auth) | auth-admin | platform-api (platform)"
+  echo "            deepi-monitor (monitor)"
   exit 1
 fi
 
@@ -44,6 +45,8 @@ resolve_service() {
     auth-admin|admin|na-auth-admin|acl) echo auth-admin ;;
     platform-api|platform|na-platform-api|api-platform)
                                         echo platform-api ;;
+    deepi-monitor|monitor|na-monitor-api|deepimonitor)
+                                        echo deepi-monitor ;;
     *)                                  echo "$1" ;;
   esac
 }
@@ -65,6 +68,7 @@ container_name_for() {
     auth-service)  echo na-auth-api ;;
     auth-admin)    echo na-auth-admin ;;
     platform-api)  echo na-platform-api ;;
+    deepi-monitor) echo na-monitor-api ;;
     *)             echo "" ;;
   esac
 }
@@ -75,6 +79,7 @@ profiles_for() {
     tempo|loki|prometheus|grafana)  echo "otel full" ;;
     auth-service|auth-admin)        echo "auth apps full" ;;
     platform-api)                   echo "platform apps full" ;;
+    deepi-monitor)                  echo "monitor apps full" ;;
     *)                              echo "?" ;;
   esac
 }
@@ -84,7 +89,7 @@ kind_for() {
     traefik|postgres|redis|pgadmin) echo infra ;;
     tempo|loki|prometheus|grafana)  echo otel ;;
     auth-admin)                     echo web ;;
-    auth-service|platform-api)      echo api ;;
+    auth-service|platform-api|deepi-monitor) echo api ;;
     *)                              echo svc ;;
   esac
 }
@@ -94,7 +99,7 @@ summary_for() {
     traefik)
       echo "Reverse-proxy HTTP :80 — route Host(*.${DOMAIN}) vers les apps via labels Docker." ;;
     postgres)
-      echo "Postgres New Age (schémas auth, core). Port hôte NEW_AGE_POSTGRES_PORT (défaut 5435)." ;;
+      echo "Postgres New Age (schémas auth, core, monitor). Port hôte NEW_AGE_POSTGRES_PORT (défaut 5435)." ;;
     redis)
       echo "Redis (allowlist/blocklist JWT jti). Port hôte NEW_AGE_REDIS_PORT (défaut 6380)." ;;
     pgadmin)
@@ -113,6 +118,8 @@ summary_for() {
       echo "UI ACL Vite (auth-service/frontend). Toujours build local ; proxy /v1 → auth-service." ;;
     platform-api)
       echo "API platform/core. Transition : lit encore souvent la webapp (PLATFORM_DATABASE_URL)." ;;
+    deepi-monitor)
+      echo "API Deepi Monitor (contrôle parc). Scaffold /health ; schéma Postgres monitor." ;;
     *)
       echo "Service inconnu du catalogue local — infos runtime seulement si le container tourne." ;;
   esac
@@ -184,6 +191,18 @@ JWT_ISSUER              Doit matcher auth-service
 AUTH_SKIP_JTI_CHECK     true = skip allowlist Redis (dev)
 EOF
       ;;
+    deepi-monitor)
+      cat <<EOF
+MONITOR_IMAGE           Image GHCR (défaut ghcr.io/.../deepi-monitor:latest)
+MONITOR_PULL_POLICY     Politique pull Compose
+MONITOR_HOST_PORT       Port hôte (8010→8000)
+MONITOR_DATABASE_URL    Injecté comme DATABASE_URL (Postgres New Age / schéma monitor)
+PLATFORM_API_URL        Appels M2M / lecture parc (http://platform-api:8000)
+AUTH_SERVICE_URL        Validation JWT / appels auth
+JWT_SECRET / JWT_ISSUER Doivent matcher auth-service
+MONITOR_CORS_ORIGINS    CORS dédié Monitor (sinon défaut compose)
+EOF
+      ;;
   esac
 }
 
@@ -198,8 +217,10 @@ compose_paths_for() {
       echo "Overlay:  local/overlays/dev-auth.yml  (DEV=auth)"
       echo "Backend:  ${ROOT}/auth-service/backend"
       echo "Dockerfile.dev:  auth-service/backend/Dockerfile.dev"
+      echo "Alembic:    ${ROOT}/auth-service/backend/alembic  → /app/alembic"
       echo "Contracts:  ${ROOT}/contracts  → /contracts"
       echo "Deepilot:   ${ROOT}/deepilot   → /deepilot"
+      echo "Migrate:    docker exec na-auth-api uv run alembic upgrade head"
       ;;
     auth-admin)
       echo "Compose:  local/docker-compose.yml  (service auth-admin)"
@@ -216,6 +237,13 @@ compose_paths_for() {
       echo "Alembic:    ${ROOT}/platform-api/alembic  → /app/alembic"
       echo "Contracts:  ${ROOT}/contracts  → /contracts"
       echo "Deepilot:   ${ROOT}/deepilot   → /deepilot"
+      ;;
+    deepi-monitor)
+      echo "Compose:  local/docker-compose.yml  (service deepi-monitor)"
+      echo "Overlay:  local/overlays/dev-monitor.yml  (DEV=monitor)"
+      echo "Backend:  ${ROOT}/deepi_monitor/backend"
+      echo "Dockerfile.dev:  deepi_monitor/backend/Dockerfile.dev"
+      echo "Contracts:  ${ROOT}/contracts  → /contracts"
       ;;
   esac
 }
@@ -300,6 +328,27 @@ Logs :
   docker logs -f na-platform-api
 EOF
       ;;
+    deepi-monitor)
+      cat <<EOF
+Relancer en DEV (hot-reload + mount contracts) :
+  cd .github && make up PROFILES="infra monitor" DEV=monitor
+
+Relancer en image GHCR (quand publiée) :
+  cd .github && make up PROFILES="infra monitor" DEV=
+
+  # image / tag : MONITOR_IMAGE et MONITOR_PULL_POLICY dans local/.env
+
+Recreate uniquement deepi-monitor (DEV) :
+  docker compose --env-file local/.env -f local/docker-compose.yml \\
+    -f local/overlays/dev-monitor.yml --profile monitor \\
+    up -d --force-recreate --build deepi-monitor
+
+URL : http://monitor.new-age.me/health  ou  http://localhost:8010/health
+
+Logs :
+  docker logs -f na-monitor-api
+EOF
+      ;;
   esac
 }
 
@@ -338,7 +387,7 @@ section() {
 CNAME=$(container_name_for "$SVC")
 if [ -z "$CNAME" ]; then
   echo "Service inconnu: '$QUERY' (résolu: '$SVC')"
-  echo "Essayez: make service SERVICE=auth-service | auth-admin | platform-api | postgres | …"
+  echo "Essayez: make service SERVICE=auth-service | auth-admin | platform-api | deepi-monitor | postgres | …"
   exit 1
 fi
 
