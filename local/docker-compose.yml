@@ -237,7 +237,7 @@ services:
     <<: *app-common
     profiles: ["auth", "apps", "full"]
     container_name: na-auth-api
-    image: ${AUTH_IMAGE:-ghcr.io/deepidoo-s-new-age/auth-service:latest}
+    image: ${AUTH_IMAGE:-ghcr.io/deepidoo-s-new-age/auth-service-backend:latest}
     pull_policy: ${AUTH_PULL_POLICY:-missing}
     ports:
       - "${AUTH_HOST_PORT:-8000}:8000"
@@ -296,7 +296,7 @@ services:
     <<: *app-common
     profiles: ["platform", "apps", "full"]
     container_name: na-platform-api
-    image: ${PLATFORM_IMAGE:-ghcr.io/deepidoo-s-new-age/platform-api:latest}
+    image: ${PLATFORM_IMAGE:-ghcr.io/deepidoo-s-new-age/platform-api-backend:latest}
     pull_policy: ${PLATFORM_PULL_POLICY:-missing}
     ports:
       - "${PLATFORM_HOST_PORT:-8001}:8000"
