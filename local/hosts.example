@@ -9,5 +9,6 @@
 127.0.0.1 auth-service.new-age.me
 127.0.0.1 auth-admin.new-age.me
 127.0.0.1 platform-api.new-age.me
+127.0.0.1 monitor.new-age.me
 127.0.0.1 grafana.new-age.me
 # 127.0.0.1 traefik.new-age.me

@@ -59,6 +59,7 @@ profile_tag() {
     otel)     tag '1;30;103' otel ;;
     auth)     tag '1;37;45' auth ;;
     platform) tag '1;30;43' platform ;;
+    monitor)  tag '1;37;42' monitor ;;
     apps)     tag '1;37;42' apps ;;
     full)     tag '1;37;44' full ;;
     *)        tag '1;37;100' "$1" ;;
@@ -71,6 +72,7 @@ profiles_for_service() {
     tempo|loki|prometheus|grafana)  printf '%s' 'otel full' ;;
     auth-service|auth-admin)        printf '%s' 'auth apps full' ;;
     platform-api)                   printf '%s' 'platform apps full' ;;
+    deepi-monitor)                  printf '%s' 'monitor apps full' ;;
     *)                              printf '%s' '?' ;;
   esac
 }
@@ -80,7 +82,7 @@ kind_for_service() {
     traefik|postgres|redis|pgadmin) printf '%s' 'infra' ;;
     tempo|loki|prometheus|grafana)  printf '%s' 'otel' ;;
     auth-admin)                     printf '%s' 'web' ;;
-    auth-service|platform-api)      printf '%s' 'api' ;;
+    auth-service|platform-api|deepi-monitor) printf '%s' 'api' ;;
     *)                              printf '%s' 'svc' ;;
   esac
 }
@@ -198,4 +200,4 @@ echo "CONTRACTS  yes = deepidoo-contracts monte en /contracts (editable, overlay
 echo "PROFILES   infra|otel|auth|platform|apps|full via make up PROFILES=..."
 echo "TRAEFIK    Host rules -> http://*.${DOMAIN} (port ${TRAEFIK_HTTP_PORT:-80}, /etc/hosts)"
 echo "Couleurs   FORCE_COLOR=1 make stack   |   NO_COLOR=1 pour les couper"
-echo "Détail 1 service:  make service SERVICE=auth-service   (aliases: auth, platform, grafana, …)"
+echo "Détail 1 service:  make service SERVICE=auth-service   (aliases: auth, platform, monitor, grafana, …)"

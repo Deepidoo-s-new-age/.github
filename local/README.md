@@ -51,6 +51,7 @@ Depuis `.github/` (`make help` pour la même liste) :
 | `status` | Repos + outdated + compose + DEV/GHCR |
 | `stack` | Tous les containers `new-age` + profiles + URLs Traefik |
 | `service` | Détail 1 service (`SERVICE=auth-service\|grafana\|…`) |
+| `migrations` | Alembic : info (5 derniers sha→name) ; `DETAIL=1` ✓/○ ; `APPLY=1` = `upgrade head` ; `SERVICE=auth\|platform\|monitor` |
 | `infra-up` / `infra-down` / `infra-ps` / `infra-logs` | Raccourcis infra |
 | `infra-reset` | `down -v` (**destructif** — efface Postgres local) |
 
@@ -67,6 +68,7 @@ Traefik écoute sur le **port 80** et route selon le `Host` :
 | http://auth-service.new-age.me | auth-service (API) |
 | http://auth-admin.new-age.me | auth-service admin ACL (Vite `:5174`) |
 | http://platform-api.new-age.me | platform-api |
+| http://monitor.new-age.me | deepi_monitor API |
 | http://grafana.new-age.me | Grafana (profile `otel`) |
 | http://traefik.new-age.me | dashboard Traefik (aussi `:8080`) |
 
@@ -115,7 +117,8 @@ make clone NEW_AGE_ROOT=~/dev/mon-ws
 | `otel` | Tempo, Loki, Prometheus, Grafana (deepilot) |
 | `auth` | auth-service API + **auth-admin** (UI ACL Vite) |
 | `platform` | platform-api |
-| `apps` | auth (+ admin) + platform |
+| `monitor` | deepi-monitor (API Deepi Monitor) |
+| `apps` | auth (+ admin) + platform + monitor |
 | `full` | tout (infra + otel + apps) |
 
 Observabilité locale (alignée helm-charts / deepilot) :
@@ -154,6 +157,7 @@ make up PROFILES="infra platform"                 # image GHCR (.env)
 make up PROFILES="infra platform" DEV=platform    # build local + reload
 make up PROFILES="infra auth platform" DEV=auth   # platform GHCR, auth local
 make up PROFILES="infra otel auth platform" DEV="auth platform"
+make up PROFILES="infra monitor" DEV=monitor      # deepi_monitor (/v1/health)
 ```
 
 ## GHCR vs hot-reload (pas de commentaire)
@@ -201,6 +205,17 @@ make up PROFILES="infra platform"
 ```
 
 ## Premier jour (user de test + migration platform)
+
+### 0. Migrations Alembic auth-service
+
+Avec `DEV=auth`, `alembic/` est monté dans le container :
+
+```bash
+docker exec -it na-auth-api uv run alembic upgrade head
+docker exec -it na-auth-api uv run alembic current
+```
+
+(`AUTH_DATABASE_URL` est déjà injecté par Compose → Postgres New Age.)
 
 ### 1. Lier un user webapp aux rôles ACL (auth-service)
 
@@ -257,6 +272,7 @@ vivent hors du volume `na_pgdata`.
 | auth-service | 8000 | auth-service.new-age.me |
 | auth-admin (ACL UI) | 5174 | auth-admin.new-age.me |
 | platform-api | 8001 | platform-api.new-age.me |
+| deepi-monitor | 8010 | monitor.new-age.me |
 | Grafana (profile `otel`) | 3001 | grafana.new-age.me |
 | Tempo OTLP / HTTP | 4318 / 3200 | — |
 | Loki | 3100 | — |
@@ -284,6 +300,7 @@ Templates : `.cursor/skills/add-compose-service/templates/`.
 | `docker-compose.yml` | Infra + apps (images GHCR) + Traefik labels |
 | `overlays/dev-auth.yml` | Build/reload auth |
 | `overlays/dev-platform.yml` | Build/reload platform |
+| `overlays/dev-monitor.yml` | Build/reload deepi_monitor |
 | `overlays/dev-*.yml` | Autres hot-reload (`DEV=` = suffixe du fichier) |
 | `hosts.example` | Lignes `/etc/hosts` |
 | `pgadmin/servers.json` | Connexion Postgres préremplie |

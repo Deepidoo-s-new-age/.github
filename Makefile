@@ -22,7 +22,7 @@ OVERLAYS_DIR := $(LOCAL_DIR)/overlays
 
 # Space-separated Compose profiles
 PROFILES ?= infra
-# Space-separated apps to run from local Dockerfile.dev (auth, platform)
+# Space-separated apps to run from local Dockerfile.dev (auth, platform, monitor)
 DEV ?=
 
 DOCKER_COMPOSE := docker compose
@@ -30,10 +30,12 @@ PROFILE_FLAGS := $(foreach p,$(PROFILES),--profile $(p))
 DEV_FLAGS := $(foreach d,$(DEV),-f $(OVERLAYS_DIR)/dev-$(d).yml)
 
 .PHONY: help setup ensure-env clone clone-status repos-check status stack service \
+	migrations \
 	up down build infra-up infra-down infra-ps infra-logs infra-reset \
 	hosts-print hosts-install print-root
 
 # make service SERVICE=auth-service  (aliases: auth, platform, auth-admin, postgres, …)
+# make migrations SERVICE=auth       (aliases: auth, platform, monitor | all)
 SERVICE ?=
 
 help: ensure-env ## Show targets
@@ -49,12 +51,17 @@ help: ensure-env ## Show targets
 	@echo "  make up PROFILES=\"infra platform\"              # platform from GHCR"
 	@echo "  make up PROFILES=\"infra platform\" DEV=platform # hot-reload build"
 	@echo "  make up PROFILES=\"infra auth platform\" DEV=auth"
+	@echo "  make up PROFILES=\"infra monitor\" DEV=monitor  # deepi_monitor hot-reload"
 	@echo "  make stack                                      # containers + profiles + Traefik URLs"
-	@echo "  make service SERVICE=auth-service               # détail 1 service (env, volumes, DEV/GHCR)"
+	@echo "  make service SERVICE=deepi-monitor              # détail 1 service (aliases: monitor)"
+	@echo "  make migrations                                 # Alembic info (5 derniers appliqués)"
+	@echo "  make migrations SERVICE=auth                    # filtrer auth|platform|monitor"
+	@echo "  make migrations DETAIL=1                        # toutes révisions + icône ✓/○"
+	@echo "  make migrations APPLY=1                         # alembic upgrade head + rapport"
 	@echo "  make repos-check                                # behind/ahead/dirty (fetch, no pull)"
 	@echo "  make hosts-print / make hosts-install           # print ou install (confirm oui/yes)"
 	@echo ""
-	@echo "URLs: http://pgadmin.new-age.me  http://auth-admin.new-age.me  http://grafana.new-age.me …"
+	@echo "URLs: http://pgadmin.new-age.me  http://auth-admin.new-age.me  http://monitor.new-age.me  http://grafana.new-age.me …"
 	@echo "Overlays: $(OVERLAYS_DIR)/dev-<name>.yml"
 	@echo "Skill Cursor : .cursor/skills/setup-local  (/setup-local)"
 
@@ -239,6 +246,9 @@ service: ensure-env ## Detail one service (SERVICE=auth-service|auth-admin|platf
 		NEW_AGE_DOMAIN="$(shell grep -E '^NEW_AGE_DOMAIN=' $(COMPOSE_ENV) 2>/dev/null | cut -d= -f2-)" \
 		SERVICE="$(SERVICE)" \
 		sh "$(LOCAL_DIR)/scripts/stack-service.sh"
+
+migrations: ensure-env ## Alembic info (APPLY=1 pour upgrade head ; DETAIL=1 pour ✓/○)
+	@SERVICE="$(SERVICE)" DETAIL="$(DETAIL)" APPLY="$(APPLY)" sh "$(LOCAL_DIR)/scripts/migrations-status.sh"
 
 up: ensure-env ensure-dev-overlays ## Start PROFILES (+ optional DEV overlays)
 	@if [ -n "$(DEV)" ]; then echo "DEV overlays: $(DEV)"; fi
