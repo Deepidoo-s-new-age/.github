@@ -106,7 +106,7 @@ services:
       - na
 
   pgadmin:
-    image: dpage/pgadmin4:9.2
+    image: dpage/pgadmin4:9.19
     container_name: na-pgadmin
     profiles: ["infra", "full"]
     ports:
@@ -114,11 +114,20 @@ services:
     environment:
       PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@new-age.me}
       PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-admin}
+      PGADMIN_DISABLE_POSTFIX: "1"
       PGADMIN_CONFIG_SERVER_MODE: "False"
       PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: "False"
+      PGADMIN_CONFIG_ENHANCED_COOKIE_PROTECTION: "False"
+      PGADMIN_REPLACE_SERVERS_ON_STARTUP: "True"
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: "5432"
+      POSTGRES_USER: ${NEW_AGE_POSTGRES_USER:-newage}
+      POSTGRES_PASSWORD: ${NEW_AGE_POSTGRES_PASSWORD:-newage}
+      POSTGRES_DB: ${NEW_AGE_POSTGRES_DB:-new_age}
     volumes:
       - na_pgadmin:/var/lib/pgadmin
-      - ./pgadmin/servers.json:/pgadmin4/servers.json:ro
+      - ./pgadmin/docker-entrypoint.sh:/pgadmin-entrypoint.sh:ro
+    entrypoint: ["/bin/sh", "/pgadmin-entrypoint.sh"]
     depends_on:
       postgres:
         condition: service_healthy

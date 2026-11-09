@@ -132,7 +132,7 @@ summary_for() {
     redis)
       echo "Redis (allowlist/blocklist JWT jti). Port hôte NEW_AGE_REDIS_PORT (défaut 6380)." ;;
     pgadmin)
-      echo "UI Postgres. Préconfiguré via local/pgadmin/servers.json." ;;
+      echo "UI Postgres. Serveur « New Age (local) » branché sur le Postgres du Compose (mot de passe inclus)." ;;
     tempo)
       echo "Tempo — traces OTLP HTTP :4318 (deepilot DEEPILOT_TEMPO_ENDPOINT)." ;;
     loki)
@@ -180,10 +180,13 @@ EOF
       ;;
     pgadmin)
       cat <<EOF
-PGADMIN_EMAIL       Login UI
-PGADMIN_PASSWORD    Mot de passe UI
-PGADMIN_HOST_PORT   Port hôte → 80 container
-NEW_AGE_DOMAIN      Host Traefik pgadmin.\${DOMAIN}
+PGADMIN_EMAIL             Login UI
+PGADMIN_PASSWORD          Mot de passe UI
+PGADMIN_HOST_PORT         Port hôte → 80 container
+NEW_AGE_DOMAIN            Host Traefik pgadmin.\${DOMAIN}
+NEW_AGE_POSTGRES_USER     User du serveur prérempli
+NEW_AGE_POSTGRES_PASSWORD Mot de passe du serveur prérempli
+NEW_AGE_POSTGRES_DB       Database du serveur prérempli
 EOF
       ;;
     auth-service)
