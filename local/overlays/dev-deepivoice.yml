@@ -1,0 +1,55 @@
+# Hot-reload overlay for deepivoice.
+# Enabled by: make up … DEV=deepivoice
+# Paths are relative to local/ (project dir = first -f compose file).
+#
+# API: bind-mount app/ and uvicorn --reload (image has no Dockerfile.dev).
+# Web: Vite on 5180 instead of the nginx production image. deesplay is the
+# sibling clone (package.json file:../../deesplay/packages/deesplay).
+
+services:
+  deepivoice-api:
+    volumes:
+      - ../../deepivoice/backend/app:/app/app
+      - na_deepivoice_data:/app/data
+    command:
+      [
+        "uvicorn",
+        "app.main:app",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "8000",
+        "--reload",
+        "--reload-dir",
+        "/app/app",
+      ]
+
+  deepivoice:
+    build:
+      context: ../../deepivoice/frontend-web
+      dockerfile_inline: |
+        FROM node:22-alpine
+        WORKDIR /app
+        EXPOSE 5180
+        CMD ["sh", "-c", "npm install && npm run dev -- --host 0.0.0.0 --port 5180 --strictPort"]
+    environment:
+      VITE_BASE: /
+      VITE_API_PROXY_TARGET: http://deepivoice-api:8000
+      VITE_AUTH_PROXY_TARGET: http://auth-service:8000
+      VITE_AUTH_SERVICE_URL: http://auth-service.new-age.me
+    volumes:
+      - ../../deepivoice/frontend-web:/app
+      - na_deepivoice_node_modules:/app/node_modules
+      - ../../deesplay:/deesplay
+      - ./docker/deesplay-consumer-tsconfig.json:/deesplay/tsconfig.json:ro
+    ports:
+      - "${DEEPIVOICE_WEB_HOST_PORT:-5180}:5180"
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.deepivoice.rule=Host(`deepivoice.${NEW_AGE_DOMAIN:-new-age.me}`)
+      - traefik.http.routers.deepivoice.priority=1
+      - traefik.http.routers.deepivoice.entrypoints=web
+      - traefik.http.services.deepivoice.loadbalancer.server.port=5180
+
+volumes:
+  na_deepivoice_node_modules:

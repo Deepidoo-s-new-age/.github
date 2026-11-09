@@ -1,0 +1,35 @@
+# Hot-reload overlay for deepiads.
+# Enabled by: make up … DEV=deepiads
+# Paths are relative to local/ (project dir = first -f compose file).
+#
+# Switches API and UI to their Dockerfile.dev (ts-node-dev and Vite).
+# Vite listens on 5173; Traefik follows that port.
+
+services:
+  deepiads-api:
+    build:
+      context: ../../deepiads/backend
+      dockerfile: Dockerfile.dev
+    volumes:
+      - ../../deepiads/backend/src:/app/src
+      - ../../deepiads/backend/scripts:/app/scripts
+      - na_deepiads_uploads:/app/uploads
+
+  deepiads:
+    build:
+      context: ../../deepiads/frontend
+      dockerfile: Dockerfile.dev
+    environment:
+      VITE_PROXY_TARGET: http://deepiads-api:3000
+    volumes:
+      - ../../deepiads/frontend/src:/app/src
+      - ../../deepiads/frontend/index.html:/app/index.html
+      - ../../deepiads/frontend/vite.config.ts:/app/vite.config.ts
+      - ../../deepiads/frontend/public:/app/public
+    ports:
+      - "${DEEPIADS_WEB_HOST_PORT:-3012}:5173"
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.deepiads.rule=Host(`deepiads.${NEW_AGE_DOMAIN:-new-age.me}`)
+      - traefik.http.routers.deepiads.entrypoints=web
+      - traefik.http.services.deepiads.loadbalancer.server.port=5173

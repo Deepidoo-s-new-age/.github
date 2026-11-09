@@ -52,6 +52,7 @@ help: ensure-env ## Show targets
 	@echo "  make up PROFILES=\"infra platform\" DEV=platform # hot-reload build"
 	@echo "  make up PROFILES=\"infra auth platform\" DEV=auth"
 	@echo "  make up PROFILES=\"infra monitor\" DEV=monitor  # deepi_monitor hot-reload"
+	@echo "  make up PROFILES=full DEV=\"auth platform monitor deepipush deepivoice deepiads deepikiosk deepiflow\""
 	@echo "  make up PROFILES=\"infra messaging scheduler deepipush deepivoice deepiads deepikiosk deepiflow\""
 	@echo "  make stack                                      # containers + profiles + Traefik URLs"
 	@echo "  make service SERVICE=deepi-monitor              # détail 1 service (aliases: monitor)"

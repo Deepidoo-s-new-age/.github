@@ -1,0 +1,23 @@
+# Hot-reload overlay for deepipush.
+# Enabled by: make up … DEV=deepipush
+# Paths are relative to local/ (project dir = first -f compose file).
+#
+# The base compose already builds the Vite UI. This overlay turns on
+# uvicorn --reload for the API. Source mounts stay those of docker-compose.yml.
+
+services:
+  deepipush:
+    command:
+      [
+        "uvicorn",
+        "app.main:app",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "8000",
+        "--reload",
+        "--reload-dir",
+        "/app/app",
+        "--reload-dir",
+        "/contracts/src",
+      ]

@@ -1,0 +1,18 @@
+# Hot-reload overlay for deepikiosk.
+# Enabled by: make up … DEV=deepikiosk
+# Paths are relative to local/ (project dir = first -f compose file).
+#
+# The repo Dockerfile copies gitignored files. The base image already runs
+# server.js; this overlay bind-mounts the source and restarts it with node --watch.
+
+services:
+  deepikiosk:
+    environment:
+      NODE_ENV: development
+    volumes:
+      - ../../deepikiosk/server.js:/app/server.js
+      - ../../deepikiosk/lib:/app/lib
+      - ../../deepikiosk/views:/app/views
+      - ../../deepikiosk/public:/app/public
+      - na_deepikiosk_data:/app/data
+    command: ["node", "--watch", "server.js"]

@@ -1,0 +1,33 @@
+# Hot-reload overlay for deepiflow.
+# Enabled by: make up … DEV=deepiflow
+# Paths are relative to local/ (project dir = first -f compose file).
+#
+# Base compose already uses Dockerfile.dev. This overlay keeps the source
+# mounts and forces uvicorn --reload so DEV=deepiflow is explicit.
+
+services:
+  deepiflow-api:
+    volumes:
+      - ../../deepiflow/backend/app:/app/app
+      - ../../deepiflow/backend/migrations:/app/migrations
+      - ../../contracts:/contracts
+      - na_deepiflow_data:/app/data
+    command:
+      [
+        "uvicorn",
+        "app.main:app",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "8000",
+        "--reload",
+        "--reload-dir",
+        "/app/app",
+        "--reload-dir",
+        "/contracts/src",
+      ]
+
+  deepiflow:
+    volumes:
+      - ../../deepiflow/frontend-web:/app
+      - na_deepiflow_node_modules:/app/node_modules

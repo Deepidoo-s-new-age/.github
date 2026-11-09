@@ -195,6 +195,7 @@ make up PROFILES="infra platform" DEV=platform    # build local + reload
 make up PROFILES="infra auth platform" DEV=auth   # platform GHCR, auth local
 make up PROFILES="infra otel auth platform" DEV="auth platform"
 make up PROFILES="infra monitor" DEV=monitor      # deepi_monitor (/v1/health)
+make up PROFILES=full DEV="auth platform monitor deepipush deepivoice deepiads deepikiosk deepiflow"
 ```
 
 ## GHCR vs hot-reload (pas de commentaire)
@@ -202,7 +203,7 @@ make up PROFILES="infra monitor" DEV=monitor      # deepi_monitor (/v1/health)
 | Mode | Mécanisme |
 |---|---|
 | Défaut | `image:` GHCR dans `docker-compose.yml` (`AUTH_IMAGE` / `PLATFORM_IMAGE`) |
-| Dev | overlay `overlays/dev-<app>.yml` via `DEV=auth` ou `DEV=platform` |
+| Dev | overlay `overlays/dev-<app>.yml` via `DEV=auth`, `platform`, `monitor`, `deepipush`, `deepivoice`, `deepiads`, `deepikiosk`, `deepiflow` |
 
 L’overlay force `build:` + volumes (`app/`, `contracts/`) + `Dockerfile.dev`
 (uvicorn `--reload`).

@@ -284,6 +284,31 @@ compose_paths_for() {
       echo "Dockerfile.dev:  deepi_monitor/backend/Dockerfile.dev"
       echo "Contracts:  ${ROOT}/contracts  → /contracts"
       ;;
+    deepipush|deepipush-web)
+      echo "Compose:  local/docker-compose.yml  (deepipush + deepipush-web)"
+      echo "Overlay:  local/overlays/dev-deepipush.yml  (DEV=deepipush)"
+      echo "API reload: uvicorn --reload. Le front Vite est déjà en dev dans le compose."
+      ;;
+    deepivoice|deepivoice-api)
+      echo "Compose:  local/docker-compose.yml  (deepivoice + deepivoice-api)"
+      echo "Overlay:  local/overlays/dev-deepivoice.yml  (DEV=deepivoice)"
+      echo "DEV: API --reload, UI Vite :5180 (sinon nginx)."
+      ;;
+    deepiads|deepiads-api)
+      echo "Compose:  local/docker-compose.yml  (deepiads + deepiads-api)"
+      echo "Overlay:  local/overlays/dev-deepiads.yml  (DEV=deepiads)"
+      echo "DEV: backend/Dockerfile.dev + frontend/Dockerfile.dev (Vite :5173)."
+      ;;
+    deepikiosk)
+      echo "Compose:  local/docker-compose.yml  (service deepikiosk)"
+      echo "Overlay:  local/overlays/dev-deepikiosk.yml  (DEV=deepikiosk)"
+      echo "DEV: node --watch sur server.js, lib, views, public."
+      ;;
+    deepiflow|deepiflow-api)
+      echo "Compose:  local/docker-compose.yml  (deepiflow + deepiflow-api)"
+      echo "Overlay:  local/overlays/dev-deepiflow.yml  (DEV=deepiflow)"
+      echo "DEV: Dockerfile.dev déjà dans le compose, uvicorn --reload explicite."
+      ;;
   esac
 }
 
@@ -386,6 +411,63 @@ URL : http://monitor.new-age.me/health  ou  http://localhost:8010/health
 
 Logs :
   docker logs -f na-monitor-api
+EOF
+      ;;
+    deepipush|deepipush-web)
+      cat <<EOF
+Relancer en DEV (API --reload, front Vite déjà monté) :
+  cd .github && make up PROFILES="infra deepipush" DEV=deepipush
+
+Logs :
+  docker logs -f na-deepipush-api
+  docker logs -f na-deepipush-web
+EOF
+      ;;
+    deepivoice|deepivoice-api)
+      cat <<EOF
+Relancer en DEV (API --reload, UI Vite au lieu de nginx) :
+  cd .github && make up PROFILES="infra deepivoice" DEV=deepivoice
+
+Sans overlay : image nginx de production locale.
+  cd .github && make up PROFILES="infra deepivoice" DEV=
+
+Logs :
+  docker logs -f na-deepivoice-api
+  docker logs -f na-deepivoice-web
+EOF
+      ;;
+    deepiads|deepiads-api)
+      cat <<EOF
+Relancer en DEV (Dockerfile.dev API + Vite) :
+  cd .github && make up PROFILES="infra deepiads" DEV=deepiads
+
+Sans overlay : images Dockerfile de prod.
+  cd .github && make up PROFILES="infra deepiads" DEV=
+
+Logs :
+  docker logs -f na-deepiads-api
+  docker logs -f na-deepiads-web
+EOF
+      ;;
+    deepikiosk)
+      cat <<EOF
+Relancer en DEV (node --watch) :
+  cd .github && make up PROFILES="infra deepikiosk" DEV=deepikiosk
+
+Logs :
+  docker logs -f na-deepikiosk
+EOF
+      ;;
+    deepiflow|deepiflow-api|deepiflow-db)
+      cat <<EOF
+Relancer en DEV (uvicorn --reload + Vite) :
+  cd .github && make up PROFILES="infra deepiflow" DEV=deepiflow
+
+URL : http://deepiflow.new-age.me
+
+Logs :
+  docker logs -f na-deepiflow-api
+  docker logs -f na-deepiflow-web
 EOF
       ;;
   esac
