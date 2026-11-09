@@ -24,7 +24,7 @@ if [ -z "$QUERY" ]; then
   echo "  infra     traefik | postgres | redis | pgadmin"
   echo "  otel      tempo | loki | prometheus | grafana"
   echo "  apps      auth-service (auth) | auth-admin | platform-api (platform)"
-  echo "            deepi-monitor (monitor)"
+  echo "            deepi-monitor (monitor) | deep-desk-api (desk) | deep-desk-worker (desk-worker)"
   exit 1
 fi
 
@@ -47,6 +47,10 @@ resolve_service() {
                                         echo platform-api ;;
     deepi-monitor|monitor|na-monitor-api|deepimonitor)
                                         echo deepi-monitor ;;
+    deep-desk-api|desk|deep-desk|deep_desk|na-desk-api)
+                                        echo deep-desk-api ;;
+    deep-desk-worker|desk-worker|na-desk-worker)
+                                        echo deep-desk-worker ;;
     *)                                  echo "$1" ;;
   esac
 }
@@ -69,6 +73,8 @@ container_name_for() {
     auth-admin)    echo na-auth-admin ;;
     platform-api)  echo na-platform-api ;;
     deepi-monitor) echo na-monitor-api ;;
+    deep-desk-api) echo na-desk-api ;;
+    deep-desk-worker) echo na-desk-worker ;;
     *)             echo "" ;;
   esac
 }
@@ -80,6 +86,7 @@ profiles_for() {
     auth-service|auth-admin)        echo "auth apps full" ;;
     platform-api)                   echo "platform apps full" ;;
     deepi-monitor)                  echo "monitor apps full" ;;
+    deep-desk-api|deep-desk-worker) echo "desk apps full" ;;
     *)                              echo "?" ;;
   esac
 }
@@ -89,7 +96,8 @@ kind_for() {
     traefik|postgres|redis|pgadmin) echo infra ;;
     tempo|loki|prometheus|grafana)  echo otel ;;
     auth-admin)                     echo web ;;
-    auth-service|platform-api|deepi-monitor) echo api ;;
+    auth-service|platform-api|deepi-monitor|deep-desk-api) echo api ;;
+    deep-desk-worker)               echo worker ;;
     *)                              echo svc ;;
   esac
 }
@@ -99,7 +107,7 @@ summary_for() {
     traefik)
       echo "Reverse-proxy HTTP :80 — route Host(*.${DOMAIN}) vers les apps via labels Docker." ;;
     postgres)
-      echo "Postgres New Age (schémas auth, core, monitor). Port hôte NEW_AGE_POSTGRES_PORT (défaut 5435)." ;;
+      echo "Postgres New Age (schémas auth, core, monitor, deep_desk). Port hôte NEW_AGE_POSTGRES_PORT (défaut 5435)." ;;
     redis)
       echo "Redis (allowlist/blocklist JWT jti). Port hôte NEW_AGE_REDIS_PORT (défaut 6380)." ;;
     pgadmin)
@@ -120,6 +128,10 @@ summary_for() {
       echo "API platform/core. Transition : lit encore souvent la webapp (PLATFORM_DATABASE_URL)." ;;
     deepi-monitor)
       echo "API Deepi Monitor (contrôle parc). Scaffold /health ; schéma Postgres monitor." ;;
+    deep-desk-api)
+      echo "API Deep Desk (boxes Android : présence Socket.IO, commandes, versions). Schéma Postgres deep_desk." ;;
+    deep-desk-worker)
+      echo "Worker Celery Deep Desk (queue version_scan). Broker Redis partagé en attendant scheduler." ;;
     *)
       echo "Service inconnu du catalogue local — infos runtime seulement si le container tourne." ;;
   esac
@@ -203,6 +215,25 @@ JWT_SECRET / JWT_ISSUER Doivent matcher auth-service
 MONITOR_CORS_ORIGINS    CORS dédié Monitor (sinon défaut compose)
 EOF
       ;;
+    deep-desk-api|deep-desk-worker)
+      cat <<EOF
+DESK_IMAGE                  Image GHCR (défaut ghcr.io/.../deep-desk:latest, API + worker)
+DESK_PULL_POLICY            Politique pull Compose
+DESK_HOST_PORT              Port hôte API (8020→8000)
+DESK_DATABASE_URL           Injecté comme LOCAL_DATABASE_URL (rôle/schéma deep_desk)
+DESK_REDIS_URL              Présence / screenshots / statut scan (db 3)
+DESK_AUTH_REDIS_URL         Injecté comme AUTH_REDIS_URL (jti auth, db 14)
+DESK_CELERY_BROKER_URL      Broker Celery (cible : Redis scheduler)
+DESK_CELERY_RESULT_BACKEND  Backend résultats Celery (db 4)
+DESK_MODULE_CLIENT_ID       Client M2M platform-api (deep_desk)
+DESK_MODULE_CLIENT_SECRET   Secret M2M dev (changeme-dev-only, seedé par auth-service)
+DESK_SUPERVISOR_URL         Supervisor (présence play, logs versions)
+DESK_SUPERVISOR_HEADER_AUTH Basic auth Supervisor
+PLATFORM_API_URL            http://platform-api:8000
+AUTH_SERVICE_URL            Validation JWT / appels auth
+JWT_SECRET / JWT_ISSUER     Doivent matcher auth-service
+EOF
+      ;;
   esac
 }
 
@@ -244,6 +275,16 @@ compose_paths_for() {
       echo "Backend:  ${ROOT}/deepi_monitor/backend"
       echo "Dockerfile.dev:  deepi_monitor/backend/Dockerfile.dev"
       echo "Contracts:  ${ROOT}/contracts  → /contracts"
+      ;;
+    deep-desk-api|deep-desk-worker)
+      echo "Compose:  local/docker-compose.yml  (services deep-desk-api, deep-desk-worker)"
+      echo "Overlay:  local/overlays/dev-desk.yml  (DEV=desk — build Dockerfile.dev + bind mounts)"
+      echo "Backend:  ${ROOT}/deep_desk/backend"
+      echo "Dockerfile.dev:  deep_desk/backend/Dockerfile.dev  (additional_context contracts)"
+      echo "Alembic:    ${ROOT}/deep_desk/backend/app/alembic  → /app/app/alembic  (-c app/alembic.ini)"
+      echo "Contracts:  ${ROOT}/contracts  → /contracts"
+      echo "Postgres:   local/initdb/02-deep-desk.sql  (rôle + schéma deep_desk)"
+      echo "Migrate:    make migrations SERVICE=desk APPLY=1"
       ;;
   esac
 }
@@ -349,6 +390,33 @@ Logs :
   docker logs -f na-monitor-api
 EOF
       ;;
+    deep-desk-api|deep-desk-worker)
+      cat <<EOF
+Relancer en DEV (build local + hot-reload ; auth + platform requis pour JWT / catalogue) :
+  cd .github && make up PROFILES="infra auth platform desk" DEV=desk
+
+Relancer en image GHCR :
+  cd .github && make up PROFILES="infra auth platform desk" DEV=
+
+  # image / tag : DESK_IMAGE et DESK_PULL_POLICY dans local/.env
+
+Schéma Postgres (volume na_pgdata existant, sinon initdb auto) :
+  docker exec na-postgres psql -U newage -d new_age -f /docker-entrypoint-initdb.d/02-deep-desk.sql
+
+Migrations Alembic :
+  make migrations SERVICE=desk APPLY=1
+
+Recreate uniquement $1 (DEV) :
+  docker compose --env-file local/.env -f local/docker-compose.yml \\
+    -f local/overlays/dev-desk.yml --profile desk \\
+    up -d --force-recreate --build $1
+
+URL : http://deep-desk.new-age.me/health  ou  http://localhost:8020/health
+
+Logs :
+  docker logs -f $(container_name_for "$1")
+EOF
+      ;;
   esac
 }
 
@@ -358,7 +426,7 @@ mask_value() {
   key=$1
   val=$2
   case "$key" in
-    *PASSWORD*|*SECRET*|*TOKEN*|*_KEY*|NODE_AUTH_TOKEN|JWT_SECRET|WEBAPP_DATABASE_URL|PLATFORM_DATABASE_URL|AUTH_DATABASE_URL|DATABASE_URL|REDIS_URL)
+    *PASSWORD*|*SECRET*|*TOKEN*|*_KEY*|*HEADER_AUTH*|NODE_AUTH_TOKEN|JWT_SECRET|*DATABASE_URL|*REDIS_URL)
       # garde schéma/host visible pour les URLs ; masque userinfo
       case "$val" in
         *://*)
@@ -387,7 +455,7 @@ section() {
 CNAME=$(container_name_for "$SVC")
 if [ -z "$CNAME" ]; then
   echo "Service inconnu: '$QUERY' (résolu: '$SVC')"
-  echo "Essayez: make service SERVICE=auth-service | auth-admin | platform-api | deepi-monitor | postgres | …"
+  echo "Essayez: make service SERVICE=auth-service | auth-admin | platform-api | deepi-monitor | deep-desk-api | postgres | …"
   exit 1
 fi
 

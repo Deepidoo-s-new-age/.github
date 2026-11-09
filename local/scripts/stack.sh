@@ -60,6 +60,7 @@ profile_tag() {
     auth)     tag '1;37;45' auth ;;
     platform) tag '1;30;43' platform ;;
     monitor)  tag '1;37;42' monitor ;;
+    desk)     tag '1;30;106' desk ;;
     apps)     tag '1;37;42' apps ;;
     full)     tag '1;37;44' full ;;
     *)        tag '1;37;100' "$1" ;;
@@ -73,6 +74,7 @@ profiles_for_service() {
     auth-service|auth-admin)        printf '%s' 'auth apps full' ;;
     platform-api)                   printf '%s' 'platform apps full' ;;
     deepi-monitor)                  printf '%s' 'monitor apps full' ;;
+    deep-desk-api|deep-desk-worker) printf '%s' 'desk apps full' ;;
     *)                              printf '%s' '?' ;;
   esac
 }
@@ -82,7 +84,8 @@ kind_for_service() {
     traefik|postgres|redis|pgadmin) printf '%s' 'infra' ;;
     tempo|loki|prometheus|grafana)  printf '%s' 'otel' ;;
     auth-admin)                     printf '%s' 'web' ;;
-    auth-service|platform-api|deepi-monitor) printf '%s' 'api' ;;
+    auth-service|platform-api|deepi-monitor|deep-desk-api) printf '%s' 'api' ;;
+    deep-desk-worker)               printf '%s' 'worker' ;;
     *)                              printf '%s' 'svc' ;;
   esac
 }
@@ -103,6 +106,7 @@ print_kind() {
     otel)  tag '1;30;103' otel ;;
     api)   tag '1;37;44' api ;;
     web)   tag '1;37;45' web ;;
+    worker) tag '1;30;106' worker ;;
     *)     printf '%s' "$1"; TAG_VIS=${#1} ;;
   esac
   pad "$TAG_VIS" "$W_KIND"
@@ -159,7 +163,7 @@ echo "$ids" | while read -r id; do
 
   mode='-'
   case "$kind" in
-    api|web)
+    api|web|worker)
       case "$img" in
         *:dev|na-*:dev) mode=DEV ;;
         ghcr.io/*)      mode=GHCR ;;
@@ -194,10 +198,10 @@ echo "$ids" | while read -r id; do
 done
 
 echo "$HR"
-echo "KIND       infra | otel (Tempo/Loki/Prometheus/Grafana) | api | web"
+echo "KIND       infra | otel (Tempo/Loki/Prometheus/Grafana) | api | web | worker"
 echo "MODE       DEV = Dockerfile.dev + bind-mounts | GHCR = image fixe (.env *_IMAGE)"
 echo "CONTRACTS  yes = deepidoo-contracts monte en /contracts (editable, overlays DEV)"
-echo "PROFILES   infra|otel|auth|platform|apps|full via make up PROFILES=..."
+echo "PROFILES   infra|otel|auth|platform|monitor|desk|apps|full via make up PROFILES=..."
 echo "TRAEFIK    Host rules -> http://*.${DOMAIN} (port ${TRAEFIK_HTTP_PORT:-80}, /etc/hosts)"
 echo "Couleurs   FORCE_COLOR=1 make stack   |   NO_COLOR=1 pour les couper"
-echo "Détail 1 service:  make service SERVICE=auth-service   (aliases: auth, platform, monitor, grafana, …)"
+echo "Détail 1 service:  make service SERVICE=auth-service   (aliases: auth, platform, monitor, desk, grafana, …)"

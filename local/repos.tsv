@@ -11,5 +11,6 @@ scheduler	git@github.com:Deepidoo-s-new-age/scheduler.git
 play_music_ai	git@github.com:Deepidoo/play_music_ai.git
 play	git@github.com:Deepidoo/play.git
 deepi_monitor	git@github.com:Deepidoo-s-new-age/deepi_monitor.git
+deep_desk	git@github.com:Deepidoo-s-new-age/deep_desk.git
 # Deployment
 helm-charts git@github.com:Deepidoo-s-new-age/helm-charts.git

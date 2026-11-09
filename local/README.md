@@ -15,6 +15,7 @@ Clone les dépôts siblings + stack Docker (infra / apps) avec **profiles**,
 - [GHCR vs hot-reload](#ghcr-vs-hot-reload-pas-de-commentaire)
 - [Que lancer ?](#que-lancer-)
 - [Premier jour (user de test + migration platform)](#premier-jour-user-de-test--migration-platform)
+- [deep_desk (API + worker)](#deep_desk-api--worker)
 - [BDD platform-api (transition)](#bdd-platform-api-transition)
 - [Ports / URLs](#ports--urls)
 - [Fichiers](#fichiers)
@@ -51,7 +52,7 @@ Depuis `.github/` (`make help` pour la même liste) :
 | `status` | Repos + outdated + compose + DEV/GHCR |
 | `stack` | Tous les containers `new-age` + profiles + URLs Traefik |
 | `service` | Détail 1 service (`SERVICE=auth-service\|grafana\|…`) |
-| `migrations` | Alembic : info (5 derniers sha→name) ; `DETAIL=1` ✓/○ ; `APPLY=1` = `upgrade head` ; `SERVICE=auth\|platform\|monitor` |
+| `migrations` | Alembic : info (5 derniers sha→name) ; `DETAIL=1` ✓/○ ; `APPLY=1` = `upgrade head` ; `SERVICE=auth\|platform\|monitor\|desk` |
 | `infra-up` / `infra-down` / `infra-ps` / `infra-logs` | Raccourcis infra |
 | `infra-reset` | `down -v` (**destructif** — efface Postgres local) |
 
@@ -69,6 +70,7 @@ Traefik écoute sur le **port 80** et route selon le `Host` :
 | http://auth-admin.new-age.me | auth-service admin ACL (Vite `:5174`) |
 | http://platform-api.new-age.me | platform-api |
 | http://monitor.new-age.me | deepi_monitor API |
+| http://deep-desk.new-age.me | deep_desk API (HTTP + Socket.IO) |
 | http://grafana.new-age.me | Grafana (profile `otel`) |
 | http://traefik.new-age.me | dashboard Traefik (aussi `:8080`) |
 
@@ -118,7 +120,8 @@ make clone NEW_AGE_ROOT=~/dev/mon-ws
 | `auth` | auth-service API + **auth-admin** (UI ACL Vite) |
 | `platform` | platform-api |
 | `monitor` | deepi-monitor (API Deepi Monitor) |
-| `apps` | auth (+ admin) + platform + monitor |
+| `desk` | deep-desk-api + deep-desk-worker (Celery `version_scan`) |
+| `apps` | auth (+ admin) + platform + monitor + desk |
 | `full` | tout (infra + otel + apps) |
 
 Observabilité locale (alignée helm-charts / deepilot) :
@@ -158,6 +161,7 @@ make up PROFILES="infra platform" DEV=platform    # build local + reload
 make up PROFILES="infra auth platform" DEV=auth   # platform GHCR, auth local
 make up PROFILES="infra otel auth platform" DEV="auth platform"
 make up PROFILES="infra monitor" DEV=monitor      # deepi_monitor (/v1/health)
+make up PROFILES="infra auth platform desk" DEV=desk  # deep_desk API + worker
 ```
 
 ## GHCR vs hot-reload (pas de commentaire)
@@ -248,6 +252,44 @@ docker exec -it na-platform-api uv run alembic upgrade head
 docker exec -it na-platform-api uv run alembic current
 ```
 
+## deep_desk (API + worker)
+
+Prérequis : `make clone` (clone `deep_desk` sous `NEW_AGE_ROOT`) + `contracts`.
+`deep-desk-api` et `deep-desk-worker` partagent la même image : GHCR par défaut
+(`DESK_IMAGE`), ou build local `deep_desk/backend/Dockerfile.dev` + bind mounts
+(`app/`, contracts → `/contracts`) avec `DEV=desk`.
+
+```bash
+make up PROFILES="infra auth platform desk"           # image GHCR
+make up PROFILES="infra auth platform desk" DEV=desk  # build local + reload
+```
+
+**Postgres** : rôle `deep_desk` (mdp local inerte `deep_desk`) dont le
+`search_path` = schéma `deep_desk` — les modèles ne déclarent pas de schéma, les
+tables et `alembic_version` y atterrissent. Créé par `initdb/02-deep-desk.sql` sur
+volume neuf ; sur un `na_pgdata` existant :
+
+```bash
+docker exec na-postgres psql -U newage -d new_age -f /docker-entrypoint-initdb.d/02-deep-desk.sql
+```
+
+**Migrations** (alembic sous `app/`, `-c app/alembic.ini`) :
+
+```bash
+make migrations SERVICE=desk APPLY=1
+```
+
+**ACL / M2M** : seedés au boot d’auth-service — scopes `deep_desk:read|write|delete`
+(rôle `admin`), rôle `module_deep_desk` (`spot:read`, `message:send`) + binding
+(`policy.csv`), et module `deep_desk` avec le secret dev `changeme-dev-only`
+(`DESK_MODULE_CLIENT_SECRET`). Une ligne `auth.modules` déjà existante n’est jamais
+écrasée : si elle a été créée via l’admin (secret aléatoire), supprime-la une fois
+puis `docker restart na-auth-api`.
+
+**Worker** : consomme la queue `version_scan` sur le Redis partagé
+(`DESK_CELERY_BROKER_URL`, db 0) en attendant le service `scheduler` (son Redis
+broker sera la cible).
+
 ## BDD platform-api (transition)
 
 `platform-api` remplacera à terme le backend Rails de la webapp. **Aujourd’hui**
@@ -273,6 +315,7 @@ vivent hors du volume `na_pgdata`.
 | auth-admin (ACL UI) | 5174 | auth-admin.new-age.me |
 | platform-api | 8001 | platform-api.new-age.me |
 | deepi-monitor | 8010 | monitor.new-age.me |
+| deep-desk-api | 8020 | deep-desk.new-age.me |
 | Grafana (profile `otel`) | 3001 | grafana.new-age.me |
 | Tempo OTLP / HTTP | 4318 / 3200 | — |
 | Loki | 3100 | — |
@@ -301,9 +344,11 @@ Templates : `.cursor/skills/add-compose-service/templates/`.
 | `overlays/dev-auth.yml` | Build/reload auth |
 | `overlays/dev-platform.yml` | Build/reload platform |
 | `overlays/dev-monitor.yml` | Build/reload deepi_monitor |
+| `overlays/dev-desk.yml` | Bind mounts reload deep_desk (API + worker) |
 | `overlays/dev-*.yml` | Autres hot-reload (`DEV=` = suffixe du fichier) |
 | `hosts.example` | Lignes `/etc/hosts` |
 | `pgadmin/servers.json` | Connexion Postgres préremplie |
 | `repos.tsv` | Liste des clones (`deesplay`, `deepilot` — libs, pas des services Compose) |
 | `otel/` | Configs Tempo / Loki / Prometheus + datasources Grafana |
 | `initdb/01-schemas.sql` | Schémas `auth`, `core` |
+| `initdb/02-deep-desk.sql` | Rôle + schéma `deep_desk` (search_path) |
