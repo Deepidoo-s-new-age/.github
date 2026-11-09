@@ -22,7 +22,7 @@ OVERLAYS_DIR := $(LOCAL_DIR)/overlays
 
 # Space-separated Compose profiles
 PROFILES ?= infra
-# Space-separated apps to run from local Dockerfile.dev (auth, platform, monitor)
+# Space-separated apps to run from local Dockerfile.dev (auth, platform, monitor, desk)
 DEV ?=
 
 DOCKER_COMPOSE := docker compose
@@ -35,7 +35,7 @@ DEV_FLAGS := $(foreach d,$(DEV),-f $(OVERLAYS_DIR)/dev-$(d).yml)
 	hosts-print hosts-install print-root
 
 # make service SERVICE=auth-service  (aliases: auth, platform, auth-admin, postgres, …)
-# make migrations SERVICE=auth       (aliases: auth, platform, monitor | all)
+# make migrations SERVICE=auth       (aliases: auth, platform, monitor, desk | all)
 SERVICE ?=
 
 help: ensure-env ## Show targets
@@ -52,16 +52,18 @@ help: ensure-env ## Show targets
 	@echo "  make up PROFILES=\"infra platform\" DEV=platform # hot-reload build"
 	@echo "  make up PROFILES=\"infra auth platform\" DEV=auth"
 	@echo "  make up PROFILES=\"infra monitor\" DEV=monitor  # deepi_monitor hot-reload"
+	@echo "  make up PROFILES=\"infra auth platform desk\" DEV=desk  # deep_desk API + worker"
 	@echo "  make stack                                      # containers + profiles + Traefik URLs"
 	@echo "  make service SERVICE=deepi-monitor              # détail 1 service (aliases: monitor)"
 	@echo "  make migrations                                 # Alembic info (5 derniers appliqués)"
-	@echo "  make migrations SERVICE=auth                    # filtrer auth|platform|monitor"
+	@echo "  make migrations SERVICE=auth                    # filtrer auth|platform|monitor|desk"
+	@echo "  make migrations SERVICE=desk APPLY=1            # deep_desk : upgrade head (app/alembic.ini)"
 	@echo "  make migrations DETAIL=1                        # toutes révisions + icône ✓/○"
 	@echo "  make migrations APPLY=1                         # alembic upgrade head + rapport"
 	@echo "  make repos-check                                # behind/ahead/dirty (fetch, no pull)"
 	@echo "  make hosts-print / make hosts-install           # print ou install (confirm oui/yes)"
 	@echo ""
-	@echo "URLs: http://pgadmin.new-age.me  http://auth-admin.new-age.me  http://monitor.new-age.me  http://grafana.new-age.me …"
+	@echo "URLs: http://pgadmin.new-age.me  http://auth-admin.new-age.me  http://monitor.new-age.me  http://deep-desk.new-age.me  http://grafana.new-age.me …"
 	@echo "Overlays: $(OVERLAYS_DIR)/dev-<name>.yml"
 	@echo "Skill Cursor : .cursor/skills/setup-local  (/setup-local)"
 

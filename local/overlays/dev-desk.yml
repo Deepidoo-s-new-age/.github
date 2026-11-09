@@ -1,0 +1,30 @@
+# Hot-reload overlay for deep_desk (API + Celery worker, same image).
+# Enabled by: make up … DEV=desk
+# Paths are relative to local/ (project dir = first -f compose file).
+#
+# Dockerfile.dev réécrit deepidoo-contracts → /contracts (editable).
+# Ne pas monter pyproject.toml / uv.lock (sed build-time).
+# Alembic lives in app/ (app/alembic.ini) → covered by the app mount.
+
+x-desk-build: &desk-build
+  context: ../../deep_desk/backend
+  dockerfile: Dockerfile.dev
+  additional_contexts:
+    contracts: ../../contracts
+
+services:
+  deep-desk-api:
+    image: na-desk-api:dev
+    pull_policy: never
+    build: *desk-build
+    volumes:
+      - ../../deep_desk/backend/app:/app/app
+      - ../../contracts:/contracts
+
+  deep-desk-worker:
+    image: na-desk-api:dev
+    pull_policy: never
+    build: *desk-build
+    volumes:
+      - ../../deep_desk/backend/app:/app/app
+      - ../../contracts:/contracts
