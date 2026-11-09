@@ -52,7 +52,7 @@ help: ensure-env ## Show targets
 	@echo "  make up PROFILES=\"infra platform\" DEV=platform # hot-reload build"
 	@echo "  make up PROFILES=\"infra auth platform\" DEV=auth"
 	@echo "  make up PROFILES=\"infra monitor\" DEV=monitor  # deepi_monitor hot-reload"
-	@echo "  make up PROFILES=full DEV=\"auth platform monitor deepipush deepivoice deepiads deepikiosk deepiflow\""
+	@echo "  make up PROFILES=full DEV=\"auth platform deepipush deepivoice deepiads deepikiosk deepiflow\""
 	@echo "  make up PROFILES=\"infra messaging scheduler deepipush deepivoice deepiads deepikiosk deepiflow\""
 	@echo "  make stack                                      # containers + profiles + Traefik URLs"
 	@echo "  make service SERVICE=deepi-monitor              # détail 1 service (aliases: monitor)"
@@ -88,6 +88,11 @@ ensure-dev-overlays:
 			echo "Known DEV overlays:"; \
 			ls "$(OVERLAYS_DIR)"/dev-*.yml 2>/dev/null | xargs -n1 basename | sed 's/^dev-//;s/\.yml$$//' | sed 's/^/  /' \
 				|| echo "  (none)"; \
+			exit 1; \
+		fi; \
+		if [ "$$d" = "monitor" ] && [ ! -d "$(NEW_AGE_ROOT)/deepi_monitor/backend" ]; then \
+			echo "DEV=monitor impossible : $(NEW_AGE_ROOT)/deepi_monitor/backend est absent (dépôt vide)."; \
+			echo "Relance sans monitor dans DEV=."; \
 			exit 1; \
 		fi; \
 	done

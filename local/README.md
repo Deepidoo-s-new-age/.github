@@ -195,7 +195,8 @@ make up PROFILES="infra platform" DEV=platform    # build local + reload
 make up PROFILES="infra auth platform" DEV=auth   # platform GHCR, auth local
 make up PROFILES="infra otel auth platform" DEV="auth platform"
 make up PROFILES="infra monitor" DEV=monitor      # deepi_monitor (/v1/health)
-make up PROFILES=full DEV="auth platform monitor deepipush deepivoice deepiads deepikiosk deepiflow"
+make up PROFILES=full DEV="auth platform deepipush deepivoice deepiads deepikiosk deepiflow"
+# DEV=monitor seulement si deepi_monitor/backend existe (le dépôt GitHub est vide)
 ```
 
 ## GHCR vs hot-reload (pas de commentaire)
