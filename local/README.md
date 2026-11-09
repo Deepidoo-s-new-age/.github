@@ -155,8 +155,8 @@ Les autres apps / infra sont clonées, pas encore lancées par `make up`.
 | `deepiads` | deepiads (UI + API + Postgres + Redis dédiés) |
 | `deepikiosk` | deepikiosk |
 | `deepiflow` | deepiflow (UI + API + Postgres pgvector) |
-| `apps` | auth (+ admin) + platform + monitor + messaging + scheduler + deepipush + deepivoice + deepiads + deepikiosk + deepiflow |
-| `full` | tout (infra + otel + apps) |
+| `apps` | auth (+ admin) + platform + messaging + scheduler + deepipush + deepivoice + deepiads + deepikiosk + deepiflow |
+| `full` | infra + otel + apps. Pas Monitor : `PROFILES=monitor` seulement (dépôt `deepi_monitor` vide) |
 
 Observabilité locale (alignée helm-charts / deepilot) :
 

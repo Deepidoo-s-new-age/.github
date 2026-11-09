@@ -339,7 +339,7 @@ services:
   # Deepi Monitor — API contrôle parc (scaffold /v1/health ; schéma monitor)
   deepi-monitor:
     <<: *app-common
-    profiles: ["monitor", "apps", "full"]
+    profiles: ["monitor"]
     container_name: na-monitor-api
     image: ${MONITOR_IMAGE:-ghcr.io/deepidoo-s-new-age/deepi-monitor:latest}
     pull_policy: ${MONITOR_PULL_POLICY:-missing}

@@ -107,7 +107,7 @@ profiles_for() {
     tempo|loki|prometheus|grafana)  echo "otel full" ;;
     auth-service|auth-admin)        echo "auth apps full" ;;
     platform-api)                   echo "platform apps full" ;;
-    deepi-monitor)                  echo "monitor apps full" ;;
+    deepi-monitor)                  echo "monitor" ;;
     messaging|messaging-api|mailcatcher) echo "messaging apps full" ;;
     scheduler)                      echo "scheduler apps full" ;;
     deepipush|deepipush-db|deepipush-web) echo "deepipush apps full" ;;

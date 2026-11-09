@@ -73,7 +73,7 @@ profiles_for_service() {
     tempo|loki|prometheus|grafana)  printf '%s' 'otel full' ;;
     auth-service|auth-admin)        printf '%s' 'auth apps full' ;;
     platform-api)                   printf '%s' 'platform apps full' ;;
-    deepi-monitor)                  printf '%s' 'monitor apps full' ;;
+    deepi-monitor)                  printf '%s' 'monitor' ;;
     messaging|messaging-api|mailcatcher) printf '%s' 'messaging apps full' ;;
     scheduler)                      printf '%s' 'scheduler apps full' ;;
     deepipush|deepipush-db|deepipush-web) printf '%s' 'deepipush apps full' ;;
