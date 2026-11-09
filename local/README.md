@@ -131,7 +131,7 @@ Catalogue des clones : `local/repos.tsv` (`make clone` / `make repos-check`).
 |---|---|
 | Foundations | `contracts`, `deepilot`, `auth-service`, `platform-api`, `deesplay` |
 | Infra | `messaging`, `scheduler` |
-| Apps | `deepipush` (ex `call_me_maybe`), `deepivoice`, `deepi_monitor`, `deepi_live`, `deepiads`, `deepikiosk` |
+| Apps | `deepipush` (ex `call_me_maybe`), `deepivoice`, `deepi_monitor`, `deepi_live`, `deepiads`, `deepikiosk`, `deepiflow` |
 | Clients | `play`, `play_music_ai` |
 | Deployment | `helm-charts` |
 

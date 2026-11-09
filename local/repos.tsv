@@ -17,6 +17,7 @@ deepi_monitor	git@github.com:Deepidoo-s-new-age/deepi_monitor.git
 deepi_live	git@github.com:Deepidoo-s-new-age/deepi_live.git
 deepiads	git@github.com:Deepidoo-s-new-age/deepiads.git
 deepikiosk	git@github.com:Deepidoo-s-new-age/deepikiosk.git
+deepiflow	git@github.com:Deepidoo-s-new-age/deepiflow.git
 # Clients (autres orgs possibles)
 play_music_ai	git@github.com:Deepidoo/play_music_ai.git
 play	git@github.com:Deepidoo/play.git
