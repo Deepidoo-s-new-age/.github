@@ -99,7 +99,7 @@ Sans ça, restez en **HTTP sur le port 80** — suffisant pour le dev local.
 ### pgAdmin
 
 - Login : `PGADMIN_EMAIL` / `PGADMIN_PASSWORD` (défaut `admin@new-age.me` / `admin`).
-- Serveur préconfiguré « New Age (local) » → host Docker `postgres`, DB `new_age`, user `newage` (mot de passe = `NEW_AGE_POSTGRES_PASSWORD`).
+- Serveur préconfiguré « New Age (local) » → host Docker `postgres`, DB `NEW_AGE_POSTGRES_DB`, user `NEW_AGE_POSTGRES_USER`. Le mot de passe est écrit au démarrage depuis `NEW_AGE_POSTGRES_PASSWORD` (défaut `newage`), donc la connexion s’ouvre sans le ressaisir. Image `dpage/pgadmin4:9.19`, la même que le chart cluster.
 
 ## Layout / `NEW_AGE_ROOT`
 
@@ -303,7 +303,7 @@ Templates : `.cursor/skills/add-compose-service/templates/`.
 | `overlays/dev-monitor.yml` | Build/reload deepi_monitor |
 | `overlays/dev-*.yml` | Autres hot-reload (`DEV=` = suffixe du fichier) |
 | `hosts.example` | Lignes `/etc/hosts` |
-| `pgadmin/servers.json` | Connexion Postgres préremplie |
+| `pgadmin/servers.json` | Forme de la connexion par défaut. Au démarrage, `pgadmin/docker-entrypoint.sh` la régénère depuis `NEW_AGE_POSTGRES_*`. |
 | `repos.tsv` | Liste des clones (`deesplay`, `deepilot` — libs, pas des services Compose) |
 | `otel/` | Configs Tempo / Loki / Prometheus + datasources Grafana |
 | `initdb/01-schemas.sql` | Schémas `auth`, `core` |
