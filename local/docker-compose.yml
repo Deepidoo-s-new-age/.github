@@ -10,8 +10,15 @@
 #   http://platform-api.new-age.me
 #   http://grafana.new-age.me      (profile otel)
 #   http://monitor.new-age.me
+#   http://messaging.new-age.me
+#   http://scheduler.new-age.me
+#   http://deepipush.new-age.me
+#   http://deepivoice.new-age.me
+#   http://deepiads.new-age.me
+#   http://deepikiosk.new-age.me
 #
-# Profiles: infra | otel | auth | platform | monitor | apps | full
+# Profiles: infra | otel | auth | platform | monitor | messaging | scheduler
+#           | deepipush | deepivoice | deepiads | deepikiosk | apps | full
 
 name: new-age
 
@@ -349,6 +356,413 @@ services:
       - traefik.http.routers.monitor.entrypoints=web
       - traefik.http.services.monitor.loadbalancer.server.port=8000
 
+  # messaging — UI Vite (proxy / vers l’API). Pas de hostname séparé pour l’API.
+  messaging-api:
+    profiles: ["messaging", "apps", "full"]
+    container_name: na-messaging-api
+    image: na-messaging-api:dev
+    pull_policy: never
+    build:
+      context: ../../messaging/backend
+      dockerfile: Dockerfile.dev
+      additional_contexts:
+        contracts: ../../contracts
+    volumes:
+      - ../../messaging/backend:/src/messaging/backend
+      - ../../contracts:/src/deepidoo-contracts
+      - na_messaging_venv:/src/messaging/backend/.venv
+    environment:
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/14}
+      AUTH_SERVICE_URL: ${AUTH_SERVICE_URL:-http://auth-service:8000}
+      PLATFORM_API_URL: ${PLATFORM_API_URL:-http://platform-api:8000}
+      JWT_SECRET: ${JWT_SECRET:-change-me}
+      JWT_ISSUER: ${JWT_ISSUER:-deepidoo-auth}
+      AUTH_SKIP_JTI_CHECK: ${MESSAGING_AUTH_SKIP_JTI_CHECK:-true}
+      CORS_ORIGINS: ${MESSAGING_CORS_ORIGINS:-http://localhost:5177,http://127.0.0.1:5177,http://messaging.new-age.me}
+      MESSAGING_ADMIN_ORGANISATION_IDS: ${MESSAGING_ADMIN_ORGANISATION_IDS:-1}
+      MESSAGING_CATALOG_DIR: ${MESSAGING_CATALOG_DIR:-data_storage/catalog}
+      MESSAGING_DUCKDB_PATH: ${MESSAGING_DUCKDB_PATH:-data_storage/messaging_history.duckdb}
+      MODULE_CLIENT_SECRET: ${MESSAGING_MODULE_CLIENT_SECRET:-change-me}
+      SMTP_DEV_LOCAL_MODE: ${SMTP_DEV_LOCAL_MODE:-true}
+      SMTP_SERVER_ADDRESS: ${SMTP_SERVER_ADDRESS:-mailcatcher}
+      SMTP_PORT: ${SMTP_PORT:-1025}
+      SMTP_USERNAME: ${SMTP_USERNAME:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_EXPEDITOR_ADDRESS: ${SMTP_EXPEDITOR_ADDRESS:-devs@deepidoo.com}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      redis:
+        condition: service_healthy
+      mailcatcher:
+        condition: service_started
+    networks: [na]
+
+  messaging:
+    profiles: ["messaging", "apps", "full"]
+    container_name: na-messaging-web
+    image: na-messaging-web:dev
+    pull_policy: never
+    build:
+      context: ../../messaging/frontend-web
+      dockerfile: Dockerfile.dev
+    working_dir: /app
+    environment:
+      VITE_API_PROXY_TARGET: http://messaging-api:8000
+      VITE_AUTH_SERVICE_URL: http://auth-service.new-age.me
+    volumes:
+      - ../../messaging/frontend-web:/app
+      - ../../deesplay:/deesplay
+      - na_messaging_node_modules:/app/node_modules
+    ports:
+      - "${MESSAGING_WEB_HOST_PORT:-5177}:5177"
+    depends_on:
+      - messaging-api
+    networks: [na]
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.messaging.rule=Host(`messaging.${NEW_AGE_DOMAIN:-new-age.me}`)
+      - traefik.http.routers.messaging.entrypoints=web
+      - traefik.http.services.messaging.loadbalancer.server.port=5177
+
+  mailcatcher:
+    image: schickling/mailcatcher:latest
+    profiles: ["messaging", "apps", "full"]
+    container_name: na-mailcatcher
+    # SMTP :1025 et UI :1080 restent sur le réseau Docker (1025 est souvent déjà pris sur l’hôte).
+    networks: [na]
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.mailcatcher.rule=Host(`mailcatcher.${NEW_AGE_DOMAIN:-new-age.me}`)
+      - traefik.http.routers.mailcatcher.entrypoints=web
+      - traefik.http.services.mailcatcher.loadbalancer.server.port=1080
+
+  # scheduler — API. / redirige vers /docs (pas de page racine).
+  scheduler:
+    <<: *app-common
+    profiles: ["scheduler", "apps", "full"]
+    container_name: na-scheduler-api
+    image: na-scheduler-api:dev
+    pull_policy: never
+    build:
+      context: ../../scheduler
+      dockerfile: Dockerfile
+      additional_contexts:
+        contracts: ../../contracts
+    ports:
+      - "${SCHEDULER_HOST_PORT:-8002}:8000"
+    environment:
+      BROKER_URL: ${SCHEDULER_BROKER_URL:-redis://redis:6379/0}
+      AUTH_REDIS_URL: ${SCHEDULER_AUTH_REDIS_URL:-redis://redis:6379/1}
+      PSQL_PLANNING_DB_URL: ${SCHEDULER_DATABASE_URL:-postgresql+asyncpg://newage:newage@postgres:5432/new_age}
+      AUTH_SERVICE_URL: ${AUTH_SERVICE_URL:-http://auth-service:8000}
+      JWT_SECRET: ${JWT_SECRET:-change-me}
+      JWT_ISSUER: ${JWT_ISSUER:-deepidoo-auth}
+      AUTH_SKIP_JTI_CHECK: ${AUTH_SKIP_JTI_CHECK:-false}
+    labels:
+      - traefik.enable=true
+      - traefik.http.middlewares.scheduler-root.redirectregex.regex=^https?://([^/]+)/?$$
+      - traefik.http.middlewares.scheduler-root.redirectregex.replacement=http://$${1}/docs
+      - traefik.http.routers.scheduler.rule=Host(`scheduler.${NEW_AGE_DOMAIN:-new-age.me}`)
+      - traefik.http.routers.scheduler.entrypoints=web
+      - traefik.http.routers.scheduler.middlewares=scheduler-root
+      - traefik.http.services.scheduler.loadbalancer.server.port=8000
+
+  deepipush-db:
+    image: postgres:16-alpine
+    profiles: ["deepipush", "apps", "full"]
+    container_name: na-deepipush-db
+    environment:
+      POSTGRES_USER: callmemaybe
+      POSTGRES_PASSWORD: change-me-postgres
+      POSTGRES_DB: call_me_maybe
+    volumes:
+      - na_deepipush_pg:/var/lib/postgresql/data
+      - ../../deepipush/backend/docker/init-schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U callmemaybe -d call_me_maybe"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    networks: [na]
+
+  # Dockerfile du repo copie encore call_me_maybe/ (contexte parent). Build local depuis backend/.
+  deepipush:
+    profiles: ["deepipush", "apps", "full"]
+    container_name: na-deepipush-api
+    image: na-deepipush-api:dev
+    pull_policy: never
+    build:
+      context: ../../deepipush/backend
+      dockerfile_inline: |
+        FROM python:3.12-slim
+        WORKDIR /app
+        RUN apt-get update && apt-get install -y --no-install-recommends build-essential \
+          && rm -rf /var/lib/apt/lists/*
+        COPY requirements.txt /tmp/requirements.txt
+        RUN grep -v '^-e ' /tmp/requirements.txt > /tmp/requirements.docker.txt \
+          && pip install --no-cache-dir -r /tmp/requirements.docker.txt
+        COPY . /app
+        ENV PYTHONUNBUFFERED=1
+        EXPOSE 8000
+        CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+    environment:
+      DATABASE_URL: postgresql+psycopg://callmemaybe:change-me-postgres@deepipush-db:5432/call_me_maybe?options=-csearch_path%3Dcall_me_maybe%2Cpublic
+      JWT_SECRET: ${JWT_SECRET:-change-me}
+      JWT_ISSUER: ${JWT_ISSUER:-deepidoo-auth}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/14}
+      AUTH_SKIP_JTI_CHECK: ${AUTH_SKIP_JTI_CHECK:-false}
+      CORS_ORIGINS: ${DEEPIPUSH_CORS_ORIGINS:-http://deepipush.new-age.me}
+      PYTHONPATH: /contracts/src
+    volumes:
+      - ../../deepipush/backend/app:/app/app
+      - ../../contracts:/contracts
+    ports:
+      - "${DEEPIPUSH_HOST_PORT:-8011}:8000"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      deepipush-db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks: [na]
+
+  # Front Relais (Vite). deesplay = clone sibling, pas le pin GitHub privé.
+  deepipush-web:
+    profiles: ["deepipush", "apps", "full"]
+    container_name: na-deepipush-web
+    image: na-deepipush-web:dev
+    pull_policy: never
+    build:
+      context: ../../deepipush/frontend-web
+      dockerfile_inline: |
+        FROM node:22-bookworm
+        WORKDIR /app
+        RUN corepack enable && corepack prepare yarn@4.9.2 --activate
+        COPY package.json yarn.lock .yarnrc.yml ./
+        RUN node -e 'const fs=require("fs"); const j=JSON.parse(fs.readFileSync("package.json","utf8")); j.dependencies["@deepidoo/deesplay"]="portal:/deesplay/packages/deesplay"; fs.writeFileSync("package.json", JSON.stringify(j,null,2)+"\n");'
+        EXPOSE 5190
+        CMD ["sh","-c","yarn install && yarn dev --host 0.0.0.0 --port 5190"]
+    volumes:
+      - ../../deepipush/frontend-web/src:/app/src
+      - ../../deepipush/frontend-web/public:/app/public
+      - ../../deepipush/frontend-web/index.html:/app/index.html
+      - ../../deepipush/frontend-web/index.relais.html:/app/index.relais.html
+      - ../../deepipush/frontend-web/vite.config.ts:/app/vite.config.ts
+      - ../../deepipush/frontend-web/tsconfig.json:/app/tsconfig.json
+      - ../../deepipush/frontend-web/vendor:/app/vendor
+      - ../../deesplay:/deesplay
+      # Hide the monorepo solution tsconfig (extends @tsconfig/node22, @vue/tsconfig).
+      - ./docker/deesplay-consumer-tsconfig.json:/deesplay/tsconfig.json:ro
+    ports:
+      - "${DEEPIPUSH_WEB_HOST_PORT:-5190}:5190"
+    networks: [na]
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.deepipush.rule=Host(`deepipush.${NEW_AGE_DOMAIN:-new-age.me}`)
+      - traefik.http.routers.deepipush.entrypoints=web
+      - traefik.http.services.deepipush.loadbalancer.server.port=5190
+
+  deepivoice-api:
+    profiles: ["deepivoice", "apps", "full"]
+    container_name: na-deepivoice-api
+    image: na-deepivoice-api:dev
+    pull_policy: never
+    build:
+      context: ../../deepivoice/backend
+      dockerfile_inline: |
+        FROM python:3.12-slim
+        RUN apt-get update && apt-get install -y --no-install-recommends \
+              ca-certificates curl ffmpeg libgl1 libglib2.0-0 \
+            && rm -rf /var/lib/apt/lists/*
+        WORKDIR /app
+        COPY pyproject.toml ./
+        COPY app ./app
+        RUN pip install --no-cache-dir . && mkdir -p /app/data
+        ENV HOST=0.0.0.0 PORT=8000 PYTHONUNBUFFERED=1
+        EXPOSE 8000
+        CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+    environment:
+      HOST: 0.0.0.0
+      PORT: "8000"
+      CORS_ORIGINS: http://deepivoice.new-age.me,http://localhost:5180
+    volumes:
+      - na_deepivoice_data:/app/data
+    ports:
+      - "${DEEPIVOICE_API_HOST_PORT:-8003}:8000"
+    networks: [na]
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.deepivoice-api.rule=Host(`deepivoice.${NEW_AGE_DOMAIN:-new-age.me}`) && PathPrefix(`/api`)
+      - traefik.http.routers.deepivoice-api.priority=100
+      - traefik.http.routers.deepivoice-api.entrypoints=web
+      - traefik.http.services.deepivoice-api.loadbalancer.server.port=8000
+
+  deepivoice:
+    profiles: ["deepivoice", "apps", "full"]
+    container_name: na-deepivoice-web
+    image: na-deepivoice-web:dev
+    pull_policy: never
+    build:
+      context: ../../deepivoice/frontend-web
+      additional_contexts:
+        deesplay: ../../deesplay/packages/deesplay
+        landing: ../../deepivoice/landing-page
+      args:
+        VITE_AUTH_SERVICE_URL: http://auth-service.${NEW_AGE_DOMAIN:-new-age.me}
+        VITE_BASE: /app/
+      dockerfile_inline: |
+        FROM node:22-alpine AS build
+        ARG VITE_AUTH_SERVICE_URL=http://auth-service.new-age.me
+        ARG VITE_BASE=/app/
+        ENV VITE_AUTH_SERVICE_URL=$$VITE_AUTH_SERVICE_URL \
+            VITE_BASE=$$VITE_BASE
+        WORKDIR /workspace/deepivoice/frontend-web
+        COPY --from=deesplay . /workspace/deesplay/packages/deesplay
+        COPY package.json package-lock.json ./
+        RUN npm ci \
+          && mkdir -p /workspace/deesplay/packages/deesplay/node_modules \
+          && ln -s /workspace/deepivoice/frontend-web/node_modules/vue \
+               /workspace/deesplay/packages/deesplay/node_modules/vue \
+          && ln -s /workspace/deepivoice/frontend-web/node_modules/vuetify \
+               /workspace/deesplay/packages/deesplay/node_modules/vuetify
+        COPY . ./
+        RUN rm -f vite.config.js vite.config.d.ts && npx vite build
+        FROM nginx:1.27-alpine
+        COPY nginx.conf /etc/nginx/conf.d/default.conf
+        COPY --from=landing . /usr/share/nginx/html/landing
+        COPY --from=build /workspace/deepivoice/frontend-web/dist /usr/share/nginx/html/app
+        EXPOSE 80
+        CMD ["nginx", "-g", "daemon off;"]
+    ports:
+      - "${DEEPIVOICE_WEB_HOST_PORT:-5180}:80"
+    depends_on:
+      - deepivoice-api
+    networks: [na]
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.deepivoice.rule=Host(`deepivoice.${NEW_AGE_DOMAIN:-new-age.me}`)
+      - traefik.http.routers.deepivoice.priority=1
+      - traefik.http.routers.deepivoice.entrypoints=web
+      - traefik.http.services.deepivoice.loadbalancer.server.port=80
+
+  deepiads-postgres:
+    image: postgres:16-alpine
+    profiles: ["deepiads", "apps", "full"]
+    container_name: na-deepiads-postgres
+    environment:
+      POSTGRES_DB: retail_media
+      POSTGRES_USER: retail_media
+      POSTGRES_PASSWORD: retail_media_secret
+    volumes:
+      - na_deepiads_pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U retail_media"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    networks: [na]
+
+  deepiads-redis:
+    image: redis:7-alpine
+    profiles: ["deepiads", "apps", "full"]
+    container_name: na-deepiads-redis
+    volumes:
+      - na_deepiads_redis:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks: [na]
+
+  deepiads-api:
+    profiles: ["deepiads", "apps", "full"]
+    container_name: na-deepiads-api
+    image: na-deepiads-api:dev
+    pull_policy: never
+    build:
+      context: ../../deepiads/backend
+      dockerfile: Dockerfile
+    environment:
+      DATABASE_URL: postgresql://retail_media:retail_media_secret@deepiads-postgres:5432/retail_media
+      REDIS_URL: redis://deepiads-redis:6379
+      PORT: "3000"
+      BASE_URL: http://deepiads.new-age.me
+      UPLOAD_DIR: /app/uploads
+      FRONTEND_URL: http://deepiads.new-age.me
+    volumes:
+      - na_deepiads_uploads:/app/uploads
+    depends_on:
+      deepiads-postgres:
+        condition: service_healthy
+      deepiads-redis:
+        condition: service_healthy
+    networks: [na]
+
+  deepiads:
+    profiles: ["deepiads", "apps", "full"]
+    container_name: na-deepiads-web
+    image: na-deepiads-web:dev
+    pull_policy: never
+    build:
+      context: ../../deepiads/frontend
+      dockerfile: Dockerfile
+    volumes:
+      - ./docker/deepiads-nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    ports:
+      - "${DEEPIADS_WEB_HOST_PORT:-3012}:8080"
+    depends_on:
+      - deepiads-api
+    networks: [na]
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.deepiads.rule=Host(`deepiads.${NEW_AGE_DOMAIN:-new-age.me}`)
+      - traefik.http.routers.deepiads.entrypoints=web
+      - traefik.http.services.deepiads.loadbalancer.server.port=8080
+
+  deepikiosk:
+    profiles: ["deepikiosk", "apps", "full"]
+    container_name: na-deepikiosk
+    image: na-deepikiosk:dev
+    pull_policy: never
+    build:
+      context: ../../deepikiosk
+      dockerfile_inline: |
+        FROM node:22-alpine
+        WORKDIR /app
+        RUN apk add --no-cache tini
+        COPY package.json package-lock.json ./
+        RUN npm ci --omit=dev
+        COPY server.js ./
+        COPY lib ./lib
+        COPY views ./views
+        COPY public ./public
+        RUN mkdir -p uploads data calendar_tokens
+        ENV NODE_ENV=production PORT=3000
+        EXPOSE 3000
+        ENTRYPOINT ["/sbin/tini", "--"]
+        CMD ["node", "server.js"]
+    environment:
+      PORT: "3000"
+      NODE_ENV: production
+      DATA_DIR: /app/data
+      TRUST_PROXY: "1"
+      SESSION_COOKIE_SECURE: "0"
+      VIEW_CACHE: "0"
+      PUBLIC_APP_URL: http://deepikiosk.${NEW_AGE_DOMAIN:-new-age.me}
+    volumes:
+      - na_deepikiosk_data:/app/data
+    ports:
+      - "${DEEPIKIOSK_HOST_PORT:-3022}:3000"
+    networks: [na]
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.deepikiosk.rule=Host(`deepikiosk.${NEW_AGE_DOMAIN:-new-age.me}`)
+      - traefik.http.routers.deepikiosk.entrypoints=web
+      - traefik.http.services.deepikiosk.loadbalancer.server.port=3000
+
 volumes:
   na_pgdata:
   na_pgadmin:
@@ -357,6 +771,14 @@ volumes:
   na_loki:
   na_prometheus:
   na_grafana:
+  na_messaging_venv:
+  na_messaging_node_modules:
+  na_deepipush_pg:
+  na_deepivoice_data:
+  na_deepiads_pg:
+  na_deepiads_redis:
+  na_deepiads_uploads:
+  na_deepikiosk_data:
 
 networks:
   na:

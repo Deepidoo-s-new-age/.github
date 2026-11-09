@@ -11,4 +11,11 @@
 127.0.0.1 platform-api.new-age.me
 127.0.0.1 monitor.new-age.me
 127.0.0.1 grafana.new-age.me
+127.0.0.1 messaging.new-age.me
+127.0.0.1 mailcatcher.new-age.me
+127.0.0.1 scheduler.new-age.me
+127.0.0.1 deepipush.new-age.me
+127.0.0.1 deepivoice.new-age.me
+127.0.0.1 deepiads.new-age.me
+127.0.0.1 deepikiosk.new-age.me
 # 127.0.0.1 traefik.new-age.me

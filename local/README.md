@@ -70,7 +70,23 @@ Traefik écoute sur le **port 80** et route selon le `Host` :
 | http://platform-api.new-age.me | platform-api |
 | http://monitor.new-age.me | deepi_monitor API |
 | http://grafana.new-age.me | Grafana (profile `otel`) |
+| http://messaging.new-age.me | messaging |
+| http://scheduler.new-age.me | scheduler |
+| http://deepipush.new-age.me | deepipush |
+| http://deepivoice.new-age.me | deepivoice |
+| http://deepiads.new-age.me | deepiads |
+| http://deepikiosk.new-age.me | deepikiosk |
 | http://traefik.new-age.me | dashboard Traefik (aussi `:8080`) |
+
+`deepi_live` n’a pas d’entrée. `deepi_monitor` reste sur `monitor.new-age.me`.
+
+Les six noms sont routés par Traefik une fois les profiles lancés (avec `infra`, sinon Traefik ne tourne pas) :
+
+```bash
+make up PROFILES="infra messaging scheduler deepipush deepivoice deepiads deepikiosk"
+```
+
+`scheduler` ouvre `/docs`. `deepipush` sert le front Relais. `deepivoice` sert la landing, l’app est sur `/app/`.
 
 1. Lancer l’infra : `make up PROFILES=infra` (ou `full` / apps selon besoin).
 2. Résoudre les noms vers localhost :
@@ -109,6 +125,19 @@ Parent du clone `.github/` (nom de dossier libre). Surcharge :
 make clone NEW_AGE_ROOT=~/dev/mon-ws
 ```
 
+Catalogue des clones : `local/repos.tsv` (`make clone` / `make repos-check`).
+
+| Groupe | Dépôts |
+|---|---|
+| Foundations | `contracts`, `deepilot`, `auth-service`, `platform-api`, `deesplay` |
+| Infra | `messaging`, `scheduler` |
+| Apps | `deepipush` (ex `call_me_maybe`), `deepivoice`, `deepi_monitor`, `deepi_live`, `deepiads`, `deepikiosk` |
+| Clients | `play`, `play_music_ai` |
+| Deployment | `helm-charts` |
+
+Seul `deepi_monitor` est un service Compose aujourd’hui (`PROFILES=monitor`).
+Les autres apps / infra sont clonées, pas encore lancées par `make up`.
+
 ## Profiles
 
 | Profile | Services |
@@ -118,7 +147,13 @@ make clone NEW_AGE_ROOT=~/dev/mon-ws
 | `auth` | auth-service API + **auth-admin** (UI ACL Vite) |
 | `platform` | platform-api |
 | `monitor` | deepi-monitor (API Deepi Monitor) |
-| `apps` | auth (+ admin) + platform + monitor |
+| `messaging` | messaging (UI + API + MailCatcher) |
+| `scheduler` | scheduler API |
+| `deepipush` | deepipush API |
+| `deepivoice` | deepivoice (UI + API) |
+| `deepiads` | deepiads (UI + API + Postgres + Redis dédiés) |
+| `deepikiosk` | deepikiosk |
+| `apps` | auth (+ admin) + platform + monitor + messaging + scheduler + deepipush + deepivoice + deepiads + deepikiosk |
 | `full` | tout (infra + otel + apps) |
 
 Observabilité locale (alignée helm-charts / deepilot) :
@@ -304,6 +339,6 @@ Templates : `.cursor/skills/add-compose-service/templates/`.
 | `overlays/dev-*.yml` | Autres hot-reload (`DEV=` = suffixe du fichier) |
 | `hosts.example` | Lignes `/etc/hosts` |
 | `pgadmin/servers.json` | Connexion Postgres préremplie |
-| `repos.tsv` | Liste des clones (`deesplay`, `deepilot` — libs, pas des services Compose) |
+| `repos.tsv` | Clones : foundations, infra (`messaging`, `scheduler`), apps, clients, deployment |
 | `otel/` | Configs Tempo / Loki / Prometheus + datasources Grafana |
 | `initdb/01-schemas.sql` | Schémas `auth`, `core` |

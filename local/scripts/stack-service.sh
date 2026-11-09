@@ -47,6 +47,16 @@ resolve_service() {
                                         echo platform-api ;;
     deepi-monitor|monitor|na-monitor-api|deepimonitor)
                                         echo deepi-monitor ;;
+    messaging|na-messaging-web)         echo messaging ;;
+    messaging-api|na-messaging-api)     echo messaging-api ;;
+    scheduler|na-scheduler-api)         echo scheduler ;;
+    deepipush|na-deepipush-web)         echo deepipush-web ;;
+    deepipush-api|na-deepipush-api)     echo deepipush ;;
+    deepivoice|na-deepivoice-web)       echo deepivoice ;;
+    deepivoice-api|na-deepivoice-api)   echo deepivoice-api ;;
+    deepiads|na-deepiads-web)           echo deepiads ;;
+    deepiads-api|na-deepiads-api)       echo deepiads-api ;;
+    deepikiosk|na-deepikiosk)           echo deepikiosk ;;
     *)                                  echo "$1" ;;
   esac
 }
@@ -69,6 +79,18 @@ container_name_for() {
     auth-admin)    echo na-auth-admin ;;
     platform-api)  echo na-platform-api ;;
     deepi-monitor) echo na-monitor-api ;;
+    messaging)     echo na-messaging-web ;;
+    messaging-api) echo na-messaging-api ;;
+    mailcatcher)   echo na-mailcatcher ;;
+    scheduler)     echo na-scheduler-api ;;
+    deepipush)     echo na-deepipush-api ;;
+    deepipush-web) echo na-deepipush-web ;;
+    deepipush-db)  echo na-deepipush-db ;;
+    deepivoice)    echo na-deepivoice-web ;;
+    deepivoice-api) echo na-deepivoice-api ;;
+    deepiads)      echo na-deepiads-web ;;
+    deepiads-api)  echo na-deepiads-api ;;
+    deepikiosk)    echo na-deepikiosk ;;
     *)             echo "" ;;
   esac
 }
@@ -80,6 +102,12 @@ profiles_for() {
     auth-service|auth-admin)        echo "auth apps full" ;;
     platform-api)                   echo "platform apps full" ;;
     deepi-monitor)                  echo "monitor apps full" ;;
+    messaging|messaging-api|mailcatcher) echo "messaging apps full" ;;
+    scheduler)                      echo "scheduler apps full" ;;
+    deepipush|deepipush-db|deepipush-web) echo "deepipush apps full" ;;
+    deepivoice|deepivoice-api)      echo "deepivoice apps full" ;;
+    deepiads|deepiads-api)          echo "deepiads apps full" ;;
+    deepikiosk)                     echo "deepikiosk apps full" ;;
     *)                              echo "?" ;;
   esac
 }
@@ -89,7 +117,8 @@ kind_for() {
     traefik|postgres|redis|pgadmin) echo infra ;;
     tempo|loki|prometheus|grafana)  echo otel ;;
     auth-admin)                     echo web ;;
-    auth-service|platform-api|deepi-monitor) echo api ;;
+    auth-service|platform-api|deepi-monitor|messaging-api|scheduler|deepipush|deepivoice-api|deepiads-api) echo api ;;
+    messaging|deepivoice|deepiads|deepikiosk|deepipush-web) echo web ;;
     *)                              echo svc ;;
   esac
 }
