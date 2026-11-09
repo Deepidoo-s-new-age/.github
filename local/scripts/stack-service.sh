@@ -57,6 +57,9 @@ resolve_service() {
     deepiads|na-deepiads-web)           echo deepiads ;;
     deepiads-api|na-deepiads-api)       echo deepiads-api ;;
     deepikiosk|na-deepikiosk)           echo deepikiosk ;;
+    deepiflow|na-deepiflow-web)       echo deepiflow ;;
+    deepiflow-api|na-deepiflow-api)   echo deepiflow-api ;;
+    deepiflow-db|na-deepiflow-db)     echo deepiflow-db ;;
     *)                                  echo "$1" ;;
   esac
 }
@@ -91,6 +94,9 @@ container_name_for() {
     deepiads)      echo na-deepiads-web ;;
     deepiads-api)  echo na-deepiads-api ;;
     deepikiosk)    echo na-deepikiosk ;;
+    deepiflow)     echo na-deepiflow-web ;;
+    deepiflow-api) echo na-deepiflow-api ;;
+    deepiflow-db)  echo na-deepiflow-db ;;
     *)             echo "" ;;
   esac
 }
@@ -108,6 +114,7 @@ profiles_for() {
     deepivoice|deepivoice-api)      echo "deepivoice apps full" ;;
     deepiads|deepiads-api)          echo "deepiads apps full" ;;
     deepikiosk)                     echo "deepikiosk apps full" ;;
+    deepiflow|deepiflow-api|deepiflow-db) echo "deepiflow apps full" ;;
     *)                              echo "?" ;;
   esac
 }
@@ -117,8 +124,8 @@ kind_for() {
     traefik|postgres|redis|pgadmin) echo infra ;;
     tempo|loki|prometheus|grafana)  echo otel ;;
     auth-admin)                     echo web ;;
-    auth-service|platform-api|deepi-monitor|messaging-api|scheduler|deepipush|deepivoice-api|deepiads-api) echo api ;;
-    messaging|deepivoice|deepiads|deepikiosk|deepipush-web) echo web ;;
+    auth-service|platform-api|deepi-monitor|messaging-api|scheduler|deepipush|deepivoice-api|deepiads-api|deepiflow-api) echo api ;;
+    messaging|deepivoice|deepiads|deepikiosk|deepipush-web|deepiflow) echo web ;;
     *)                              echo svc ;;
   esac
 }

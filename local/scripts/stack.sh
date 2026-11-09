@@ -60,7 +60,7 @@ profile_tag() {
     auth)     tag '1;37;45' auth ;;
     platform) tag '1;30;43' platform ;;
     monitor)  tag '1;37;42' monitor ;;
-    messaging|scheduler|deepipush|deepivoice|deepiads|deepikiosk) tag '1;37;42' "$1" ;;
+    messaging|scheduler|deepipush|deepivoice|deepiads|deepikiosk|deepiflow) tag '1;37;42' "$1" ;;
     apps)     tag '1;37;42' apps ;;
     full)     tag '1;37;44' full ;;
     *)        tag '1;37;100' "$1" ;;
@@ -80,6 +80,7 @@ profiles_for_service() {
     deepivoice|deepivoice-api)      printf '%s' 'deepivoice apps full' ;;
     deepiads|deepiads-api|deepiads-postgres|deepiads-redis) printf '%s' 'deepiads apps full' ;;
     deepikiosk)                     printf '%s' 'deepikiosk apps full' ;;
+    deepiflow|deepiflow-api|deepiflow-db) printf '%s' 'deepiflow apps full' ;;
     *)                              printf '%s' '?' ;;
   esac
 }
@@ -89,8 +90,8 @@ kind_for_service() {
     traefik|postgres|redis|pgadmin) printf '%s' 'infra' ;;
     tempo|loki|prometheus|grafana)  printf '%s' 'otel' ;;
     auth-admin)                     printf '%s' 'web' ;;
-    auth-service|platform-api|deepi-monitor|messaging-api|scheduler|deepipush|deepivoice-api|deepiads-api) printf '%s' 'api' ;;
-    messaging|deepivoice|deepiads|deepikiosk|deepipush-web) printf '%s' 'web' ;;
+    auth-service|platform-api|deepi-monitor|messaging-api|scheduler|deepipush|deepivoice-api|deepiads-api|deepiflow-api) printf '%s' 'api' ;;
+    messaging|deepivoice|deepiads|deepikiosk|deepipush-web|deepiflow) printf '%s' 'web' ;;
     *)                              printf '%s' 'svc' ;;
   esac
 }

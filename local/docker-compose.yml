@@ -16,9 +16,10 @@
 #   http://deepivoice.new-age.me
 #   http://deepiads.new-age.me
 #   http://deepikiosk.new-age.me
+#   http://deepiflow.new-age.me
 #
 # Profiles: infra | otel | auth | platform | monitor | messaging | scheduler
-#           | deepipush | deepivoice | deepiads | deepikiosk | apps | full
+#           | deepipush | deepivoice | deepiads | deepikiosk | deepiflow | apps | full
 
 name: new-age
 
@@ -772,6 +773,90 @@ services:
       - traefik.http.routers.deepikiosk.entrypoints=web
       - traefik.http.services.deepikiosk.loadbalancer.server.port=3000
 
+  deepiflow-db:
+    image: pgvector/pgvector:pg16
+    profiles: ["deepiflow", "apps", "full"]
+    container_name: na-deepiflow-db
+    environment:
+      POSTGRES_USER: playmusic
+      POSTGRES_PASSWORD: change-me-postgres
+      POSTGRES_DB: play_music_ai
+    volumes:
+      - na_deepiflow_pg:/var/lib/postgresql/data
+      - ../../deepiflow/backend/docker/init-music-ai-schema.sql:/docker-entrypoint-initdb.d/01-music-ai.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U playmusic -d play_music_ai"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    networks: [na]
+
+  # Dockerfile.dev attend le contexte parent (COPY deepiflow/… et COPY contracts).
+  deepiflow-api:
+    profiles: ["deepiflow", "apps", "full"]
+    container_name: na-deepiflow-api
+    image: na-deepiflow-api:dev
+    pull_policy: never
+    platform: linux/amd64
+    build:
+      context: ../..
+      dockerfile: deepiflow/backend/Dockerfile.dev
+    environment:
+      DOCKER: "1"
+      PYTHONPATH: /contracts/src
+      BOOTSTRAP_SCHEMA_ON_STARTUP: "true"
+      CATALOG_PREWARM_ON_STARTUP: "false"
+      CATALOG_SECTIONS_PREWARM_ON_STARTUP: "false"
+      PULSE_PREWARM_ON_STARTUP: "false"
+      COVER_CACHE_PREWARM_ON_STARTUP: "false"
+      ESSENTIA_ENABLED: "false"
+      MERT_ENABLED: "0"
+      YOUTUBE_POT_PROVIDER_ENABLED: "false"
+      DATABASE_URL: postgresql+psycopg://playmusic:change-me-postgres@deepiflow-db:5432/play_music_ai?options=-csearch_path%3Dmusic_ai%2Cpublic
+      JWT_SECRET: ${JWT_SECRET:-change-me}
+      JWT_ISSUER: deepidoo-auth
+      AUTH_SKIP_JTI_CHECK: "true"
+      AUTH_SERVICE_URL: http://auth-service:8000
+      PLATFORM_API_BASE_URL: http://platform-api:8000
+      CORS_ORIGINS: http://deepiflow.${NEW_AGE_DOMAIN:-new-age.me},http://localhost:5283
+    volumes:
+      - ../../deepiflow/backend/app:/app/app
+      - ../../deepiflow/backend/migrations:/app/migrations
+      - ../../contracts:/contracts
+      - na_deepiflow_data:/app/data
+    ports:
+      - "${DEEPIFLOW_API_HOST_PORT:-8004}:8000"
+    depends_on:
+      deepiflow-db:
+        condition: service_healthy
+    networks: [na]
+
+  deepiflow:
+    profiles: ["deepiflow", "apps", "full"]
+    container_name: na-deepiflow-web
+    image: na-deepiflow-web:dev
+    pull_policy: never
+    build:
+      context: ../../deepiflow
+      dockerfile: frontend-web/Dockerfile.dev
+    environment:
+      DOCKER: "0"
+      VITE_API_PROXY_TARGET: http://deepiflow-api:8000
+      VITE_AUTH_SERVICE_URL: http://auth-service.${NEW_AGE_DOMAIN:-new-age.me}
+    volumes:
+      - ../../deepiflow/frontend-web:/app
+      - na_deepiflow_node_modules:/app/node_modules
+    ports:
+      - "${DEEPIFLOW_WEB_HOST_PORT:-5283}:5283"
+    depends_on:
+      - deepiflow-api
+    networks: [na]
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.deepiflow.rule=Host(`deepiflow.${NEW_AGE_DOMAIN:-new-age.me}`)
+      - traefik.http.routers.deepiflow.entrypoints=web
+      - traefik.http.services.deepiflow.loadbalancer.server.port=5283
+
 volumes:
   na_pgdata:
   na_pgadmin:
@@ -788,6 +873,9 @@ volumes:
   na_deepiads_redis:
   na_deepiads_uploads:
   na_deepikiosk_data:
+  na_deepiflow_pg:
+  na_deepiflow_data:
+  na_deepiflow_node_modules:
 
 networks:
   na:

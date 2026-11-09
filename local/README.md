@@ -76,6 +76,7 @@ Traefik écoute sur le **port 80** et route selon le `Host` :
 | http://deepivoice.new-age.me | deepivoice |
 | http://deepiads.new-age.me | deepiads |
 | http://deepikiosk.new-age.me | deepikiosk |
+| http://deepiflow.new-age.me | deepiflow |
 | http://traefik.new-age.me | dashboard Traefik (aussi `:8080`) |
 
 `deepi_live` n’a pas d’entrée. `deepi_monitor` reste sur `monitor.new-age.me`.
@@ -83,10 +84,10 @@ Traefik écoute sur le **port 80** et route selon le `Host` :
 Les six noms sont routés par Traefik une fois les profiles lancés (avec `infra`, sinon Traefik ne tourne pas) :
 
 ```bash
-make up PROFILES="infra messaging scheduler deepipush deepivoice deepiads deepikiosk"
+make up PROFILES="infra messaging scheduler deepipush deepivoice deepiads deepikiosk deepiflow"
 ```
 
-`scheduler` ouvre `/docs`. `deepipush` sert le front Relais. `deepivoice` sert la landing, l’app est sur `/app/`.
+`scheduler` ouvre `/docs`. `deepipush` sert le front Relais. `deepivoice` sert la landing, l’app est sur `/app/`. `deepiflow` sert le front Vite, l’API est proxifiée sur `/api`.
 
 1. Lancer l’infra : `make up PROFILES=infra` (ou `full` / apps selon besoin).
 2. Résoudre les noms vers localhost :
@@ -153,7 +154,8 @@ Les autres apps / infra sont clonées, pas encore lancées par `make up`.
 | `deepivoice` | deepivoice (UI + API) |
 | `deepiads` | deepiads (UI + API + Postgres + Redis dédiés) |
 | `deepikiosk` | deepikiosk |
-| `apps` | auth (+ admin) + platform + monitor + messaging + scheduler + deepipush + deepivoice + deepiads + deepikiosk |
+| `deepiflow` | deepiflow (UI + API + Postgres pgvector) |
+| `apps` | auth (+ admin) + platform + monitor + messaging + scheduler + deepipush + deepivoice + deepiads + deepikiosk + deepiflow |
 | `full` | tout (infra + otel + apps) |
 
 Observabilité locale (alignée helm-charts / deepilot) :
