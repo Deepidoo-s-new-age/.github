@@ -464,6 +464,7 @@ services:
     environment:
       BROKER_URL: ${SCHEDULER_BROKER_URL:-redis://redis:6379/0}
       AUTH_REDIS_URL: ${SCHEDULER_AUTH_REDIS_URL:-redis://redis:6379/1}
+      BEAT_SCHEDULER_CONF_OPT: ${BEAT_SCHEDULER_CONF_OPT:-sqlalchemy_celery_beat.schedulers:DatabaseScheduler}
       PSQL_PLANNING_DB_URL: ${SCHEDULER_DATABASE_URL:-postgresql+asyncpg://newage:newage@postgres:5432/new_age}
       AUTH_SERVICE_URL: ${AUTH_SERVICE_URL:-http://auth-service:8000}
       JWT_SECRET: ${JWT_SECRET:-change-me}
