@@ -265,7 +265,7 @@ services:
       REDIS_URL: ${REDIS_URL:-redis://redis:6379/14}
       JWT_SECRET: ${JWT_SECRET:-change-me}
       JWT_ISSUER: ${JWT_ISSUER:-deepidoo-auth}
-      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173,http://127.0.0.1:5173,http://localhost:5174,http://127.0.0.1:5174,http://auth-service.new-age.me,http://auth-admin.new-age.me,http://platform-api.new-age.me}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173,http://127.0.0.1:5173,http://localhost:5174,http://127.0.0.1:5174,http://localhost:5283,http://127.0.0.1:5283,http://auth-service.new-age.me,http://auth-admin.new-age.me,http://platform-api.new-age.me,http://deepiflow.new-age.me}
       DEEPILOT_SERVICE_NAME: ${DEEPILOT_AUTH_SERVICE_NAME:-auth-service}
       DEEPILOT_ENVIRONMENT: ${DEEPILOT_ENVIRONMENT:-local}
       DEEPILOT_TEMPO_ENDPOINT: ${DEEPILOT_TEMPO_ENDPOINT:-http://tempo:4318}
@@ -698,11 +698,14 @@ services:
       dockerfile: Dockerfile
     environment:
       DATABASE_URL: postgresql://retail_media:retail_media_secret@deepiads-postgres:5432/retail_media
+      DATABASE_APP_URL: postgresql://deepiads_app:retail_media_secret@deepiads-postgres:5432/retail_media
       REDIS_URL: redis://deepiads-redis:6379
       PORT: "3000"
       BASE_URL: http://deepiads.new-age.me
       UPLOAD_DIR: /app/uploads
-      FRONTEND_URL: http://deepiads.new-age.me
+      FRONTEND_URL: http://deepiads.new-age.me,http://localhost:3012,http://127.0.0.1:3012
+      AUTH_SERVICE_URL: http://auth-service:8000
+      PIXABAY_API_KEY: ${PIXABAY_API_KEY:-}
     volumes:
       - na_deepiads_uploads:/app/uploads
     depends_on:
@@ -718,8 +721,28 @@ services:
     image: na-deepiads-web:dev
     pull_policy: never
     build:
-      context: ../../deepiads/frontend
-      dockerfile: Dockerfile
+      context: ../..
+      dockerfile_inline: |
+        FROM node:22-alpine AS build
+        WORKDIR /workspace
+        COPY deesplay/packages/deesplay /workspace/deesplay/packages/deesplay
+        WORKDIR /workspace/deepiads/frontend-web
+        COPY deepiads/frontend-web/package.json deepiads/frontend-web/package-lock.json ./
+        RUN npm ci \
+            && mkdir -p /workspace/deesplay/packages/deesplay/node_modules \
+            && ln -sf /workspace/deepiads/frontend-web/node_modules/vue \
+                 /workspace/deesplay/packages/deesplay/node_modules/vue \
+            && ln -sf /workspace/deepiads/frontend-web/node_modules/vuetify \
+                 /workspace/deesplay/packages/deesplay/node_modules/vuetify \
+            && ln -sf /workspace/deepiads/frontend-web/node_modules/vue-router \
+                 /workspace/deesplay/packages/deesplay/node_modules/vue-router
+        COPY deepiads/frontend-web ./
+        RUN npx vite build
+        FROM nginx:1.27-alpine AS runner
+        COPY deepiads/frontend-web/nginx.conf /etc/nginx/conf.d/default.conf
+        COPY --from=build /workspace/deepiads/frontend-web/dist /usr/share/nginx/html
+        EXPOSE 8080
+        CMD ["nginx", "-g", "daemon off;"]
     volumes:
       - ./docker/deepiads-nginx.conf:/etc/nginx/conf.d/default.conf:ro
     ports:
@@ -733,46 +756,82 @@ services:
       - traefik.http.routers.deepiads.entrypoints=web
       - traefik.http.services.deepiads.loadbalancer.server.port=8080
 
+  deepikiosk-api:
+    profiles: ["deepikiosk", "apps", "full"]
+    container_name: na-deepikiosk-api
+    image: na-deepikiosk-api:dev
+    pull_policy: never
+    build:
+      context: ../../deepikiosk/backend
+      dockerfile_inline: |
+        FROM python:3.12-slim
+        WORKDIR /app
+        RUN apt-get update && apt-get install -y --no-install-recommends build-essential \
+          && rm -rf /var/lib/apt/lists/*
+        COPY requirements.txt /tmp/requirements.txt
+        RUN pip install --no-cache-dir -r /tmp/requirements.txt
+        COPY . /app
+        ENV PYTHONUNBUFFERED=1 PYTHONPATH=/contracts/src
+        EXPOSE 8000
+        CMD ["sh", "-c", "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload --reload-dir /app/app"]
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${NEW_AGE_POSTGRES_USER:-newage}:${NEW_AGE_POSTGRES_PASSWORD:-newage}@postgres:5432/${NEW_AGE_POSTGRES_DB:-new_age}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/14}
+      JWT_SECRET: ${JWT_SECRET:-change-me}
+      JWT_ISSUER: ${JWT_ISSUER:-deepidoo-auth}
+      AUTH_SKIP_JTI_CHECK: "true"
+      CORS_ORIGINS: http://deepikiosk.${NEW_AGE_DOMAIN:-new-age.me},http://localhost:3022
+      MEDIA_ROOT: /data/media
+      PUBLIC_APP_URL: http://deepikiosk.${NEW_AGE_DOMAIN:-new-age.me}
+    volumes:
+      - ../../deepikiosk/backend:/app
+      - ../../contracts:/contracts:ro
+      - na_deepikiosk_data:/data/media
+    ports:
+      - "${DEEPIKIOSK_API_HOST_PORT:-3023}:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks: [na]
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.deepikiosk-api.rule=Host(`deepikiosk.${NEW_AGE_DOMAIN:-new-age.me}`) && PathPrefix(`/api`)
+      - traefik.http.routers.deepikiosk-api.priority=100
+      - traefik.http.routers.deepikiosk-api.entrypoints=web
+      - traefik.http.services.deepikiosk-api.loadbalancer.server.port=8000
+
   deepikiosk:
     profiles: ["deepikiosk", "apps", "full"]
     container_name: na-deepikiosk
-    image: na-deepikiosk:dev
+    image: na-deepikiosk-web:dev
     pull_policy: never
     build:
-      context: ../../deepikiosk
+      context: ../../deepikiosk/frontend-web
       dockerfile_inline: |
         FROM node:22-alpine
         WORKDIR /app
-        RUN apk add --no-cache tini
-        COPY package.json package-lock.json ./
-        RUN npm ci --omit=dev
-        COPY server.js ./
-        COPY lib ./lib
-        COPY views ./views
-        COPY public ./public
-        RUN mkdir -p uploads data calendar_tokens
-        ENV NODE_ENV=production PORT=3000
-        EXPOSE 3000
-        ENTRYPOINT ["/sbin/tini", "--"]
-        CMD ["node", "server.js"]
+        EXPOSE 5184
+        CMD ["sh", "-c", "cp package-lock.json /tmp/pl.json && rm package-lock.json && npm install && mv /tmp/pl.json package-lock.json && npm run dev -- --host 0.0.0.0 --port 5184 --strictPort"]
+    command: ["sh", "-c", "cp package-lock.json /tmp/pl.json && rm package-lock.json && npm install && mv /tmp/pl.json package-lock.json && npm run dev -- --host 0.0.0.0 --port 5184 --strictPort"]
     environment:
-      PORT: "3000"
-      NODE_ENV: production
-      DATA_DIR: /app/data
-      TRUST_PROXY: "1"
-      SESSION_COOKIE_SECURE: "0"
-      VIEW_CACHE: "0"
-      PUBLIC_APP_URL: http://deepikiosk.${NEW_AGE_DOMAIN:-new-age.me}
+      VITE_API_PROXY_TARGET: http://deepikiosk-api:8000
+      VITE_AUTH_PROXY_TARGET: http://auth-service:8000
+      VITE_AUTH_SERVICE_URL: http://auth-service.${NEW_AGE_DOMAIN:-new-age.me}
     volumes:
-      - na_deepikiosk_data:/app/data
+      - ../../deepikiosk/frontend-web:/app
+      - na_deepikiosk_node_modules:/app/node_modules
+      - ../../deesplay:/deesplay
     ports:
-      - "${DEEPIKIOSK_HOST_PORT:-3022}:3000"
+      - "${DEEPIKIOSK_HOST_PORT:-3022}:5184"
+    depends_on:
+      - deepikiosk-api
     networks: [na]
     labels:
       - traefik.enable=true
       - traefik.http.routers.deepikiosk.rule=Host(`deepikiosk.${NEW_AGE_DOMAIN:-new-age.me}`)
+      - traefik.http.routers.deepikiosk.priority=1
       - traefik.http.routers.deepikiosk.entrypoints=web
-      - traefik.http.services.deepikiosk.loadbalancer.server.port=3000
+      - traefik.http.services.deepikiosk.loadbalancer.server.port=5184
 
   deepiflow-db:
     image: pgvector/pgvector:pg16
@@ -783,7 +842,7 @@ services:
       POSTGRES_PASSWORD: change-me-postgres
       POSTGRES_DB: play_music_ai
     volumes:
-      - na_deepiflow_pg:/var/lib/postgresql/data
+      - play_music_ai_postgres_data:/var/lib/postgresql/data
       - ../../deepiflow/backend/docker/init-music-ai-schema.sql:/docker-entrypoint-initdb.d/01-music-ai.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U playmusic -d play_music_ai"]
@@ -802,6 +861,8 @@ services:
     build:
       context: ../..
       dockerfile: deepiflow/backend/Dockerfile.dev
+    env_file:
+      - ../../deepiflow/.env
     environment:
       DOCKER: "1"
       PYTHONPATH: /contracts/src
@@ -819,6 +880,7 @@ services:
       AUTH_SKIP_JTI_CHECK: "true"
       AUTH_SERVICE_URL: http://auth-service:8000
       PLATFORM_API_BASE_URL: http://platform-api:8000
+      REDIS_URL: redis://redis:6379/14
       CORS_ORIGINS: http://deepiflow.${NEW_AGE_DOMAIN:-new-age.me},http://localhost:5283
     volumes:
       - ../../deepiflow/backend/app:/app/app
@@ -874,7 +936,11 @@ volumes:
   na_deepiads_redis:
   na_deepiads_uploads:
   na_deepikiosk_data:
+  na_deepikiosk_node_modules:
   na_deepiflow_pg:
+  play_music_ai_postgres_data:
+    external: true
+    name: play_music_ai_postgres_data
   na_deepiflow_data:
   na_deepiflow_node_modules:
 
