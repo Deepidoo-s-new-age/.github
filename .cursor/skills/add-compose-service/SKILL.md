@@ -28,7 +28,8 @@ Références vivantes à copier / adapter :
 ## Règles dures
 
 1. Travailler sous **`.github/`** ; chemins volumes relatifs à `local/`
-   (`../../{repo}/…`).
+   (`../../{repo}/…`). **Ne pas** ajouter de `docker-compose.yml` dans le dépôt
+   du service (local = ce stack uniquement ; cluster = helm-charts).
 2. **Profile** dédié court (`foo`) + inclusion dans `apps` et `full`.
 3. **`DEV=`** = short name = fichier `overlays/dev-{short}.yml`
    (`DEV=foo` → `dev-foo.yml`), pas le nom du repo complet.

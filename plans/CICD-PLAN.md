@@ -291,10 +291,7 @@ semgrep scan --error --config p/owasp-top-ten --config p/python --config p/javas
 
 Pin the CLI version in the workflow. If the first run is noisy, fail only on findings that are not in a committed baseline. The job covers A04, A05, part of A01, and part of A10. It does not replace the access-control tests or the supply-chain checks in the table above.
 
-Add import-linter contracts:
-
-- a service does not import another service’s application code;
-- route handlers do not own SQL.
+Add import-linter contracts (per service), for example route handlers do not own SQL.
 
 Add dependency-cruiser for frontends once phase 4 is green: a module UI does not import another service.
 

@@ -334,6 +334,10 @@ Templates : `.cursor/skills/add-compose-service/templates/`.
 
 ## Fichiers
 
+Les dépôts listés dans `repos.tsv` (foundations, modules, infra) **n’ont pas**
+de `docker-compose.yml` local : seul ce répertoire pilote le dev Docker ; le
+cluster est dans `helm-charts`.
+
 | Fichier | Rôle |
 |---|---|
 | `docker-compose.yml` | Infra + apps (images GHCR) + Traefik labels |
