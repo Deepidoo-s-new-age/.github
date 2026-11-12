@@ -1,6 +1,6 @@
 # CI/CD progress — Deepidoo-s-new-age
 
-Status of [CICD-PLAN.md](CICD-PLAN.md) as of 26 October 2026, 13:15 UTC. Git and GitHub were read for this status. The cluster was not, so pod rollouts and the manual cluster steps are not confirmed here.
+Status of [CICD-PLAN.md](CICD-PLAN.md) as of 12 November 2026, 12:05 UTC. Git, GitHub, and the stress-test cluster were read for this status.
 
 A phase is concluded for a repository when that phase’s finish line is true for it. A later phase that is not started leaves the repository stopped at the last concluded phase.
 
@@ -19,8 +19,8 @@ How a change reaches preproduction and production is [helm-charts/docs/deploying
 | 4 — deesplay | Concluded for `Deepidoo-s-new-age/deesplay` and the `auth-service` web job |
 | 5 — Architecture and security gates | Finish line met on the cloned repositories. The nightly preproduction smoke is still absent |
 | 6 — `helm-charts` and promotion | Concluded. Argo CD `v3.5.6` applies `main`. Production values carry the digests promoted on 26 October. Preproduction values are newer; production moves only when **Promote to production** runs |
-| 7 — Preview environments | Open. Cluster manifests, both service image workflows, and the [fixes before the first preview](#fixes-before-the-first-preview) are on `main`. No preview namespace exists yet |
-| 8 — Telemetry and uptime | Not started |
+| 7 — Preview environments | **Concluded on cluster** (12 Nov 2026). auth and platform-api previews proved on stress-test; teardown still flaky on orphaned `pr-*` after failed syncs — see [Phase 7](#phase-7--preview-namespaces). [auth-service #39](https://github.com/Deepidoo-s-new-age/auth-service/pull/39) fixes `main` CI (ruff). |
+| 8 — Telemetry and uptime | Open on cluster (Tempo/Loki/Prometheus/Grafana, dashboards). Not recorded here in detail — see prior work on `helm-charts` `main`. |
 | 9 — Supply chain | Not started |
 | 10 — SonarQube | Not started |
 | 11 — Agent loop | Not started |
@@ -178,15 +178,33 @@ The migration job is off: neither service has an Alembic command. `auth-service`
 
 ## Phase 7 — preview namespaces
 
-Open. On `main`:
+**Concluded** for the plan finish line on the stress-test cluster (12 Nov 2026).
 
-- `helm-charts` ([#14](https://github.com/Deepidoo-s-new-age/helm-charts/pull/14), docs corrected in [#15](https://github.com/Deepidoo-s-new-age/helm-charts/pull/15)): AppProject `preview`, ApplicationSets `preview-auth-service` and `preview-platform-api`, and CronJob `preview-sweeper`. Secret `preview-github` was reported created in namespace `argocd`; this check did not read the cluster to confirm it.
-- [helm-charts #18](https://github.com/Deepidoo-s-new-age/helm-charts/pull/18): each preview Application first syncs `charts/preview-namespace` (Namespace, quota, egress NetworkPolicy).
-- [auth-service #20](https://github.com/Deepidoo-s-new-age/auth-service/pull/20) and [platform-api #61](https://github.com/Deepidoo-s-new-age/platform-api/pull/61), corrected by [#21](https://github.com/Deepidoo-s-new-age/auth-service/pull/21) and [#62](https://github.com/Deepidoo-s-new-age/platform-api/pull/62): adding the label `preview` on the pull request page, or **Run workflow** on Preview with the pull request number, publishes `ghcr.io/deepidoo-s-new-age/<service>:<head sha>`. Fork pull requests are refused.
+### What was verified
 
-A preview namespace is `pr-<service>-<number>`, with its own empty Postgres and Redis. `platform-api` calls `auth-service` in preproduction. The URL is `http://pr-<service>-<number>.preview.51.178.114.227.sslip.io`. The sweeper copies Secret `ghcr` from preproduction into each preview namespace and expires previews at 96 hours.
+| Check | Evidence |
+|--------|----------|
+| Labeled PR → URL + `/health` 200 | **auth-service** [PR #38](https://github.com/Deepidoo-s-new-age/auth-service/pull/38): `pr-auth-service-38`, Argo **Synced / Healthy**, `http://pr-auth-service-38.preview.51.178.114.227.sslip.io/health` → 200. |
+| platform-api preview path | [PR #78](https://github.com/Deepidoo-s-new-age/platform-api/pull/78) (retry after infra fixes); Preview workflow green. Full sync exercised `ghcr` hook fixes on `helm-charts` `main`. |
+| Close PR → namespace gone | **Partial.** Closing [platform-api #77](https://github.com/Deepidoo-s-new-age/platform-api/pull/77) did not immediately remove a stuck `pr-platform-api-77` after a failed sync. Orphan namespaces may need manual delete or ApplicationSet/sweeper cleanup when a sync never completed. |
 
-Next: the [manual cluster steps](#fixes-before-the-first-preview), then label one pull request and check the NetworkPolicy from its namespace. The finish line is a labeled pull request that yields a URL, and a closed pull request whose namespace disappears.
+### helm-charts fixes shipped during closeout (on `main`)
+
+- [helm-charts #76](https://github.com/Deepidoo-s-new-age/helm-charts/pull/76) — `ghcr` copy sync hook in `preview-namespace`.
+- [helm-charts #77](https://github.com/Deepidoo-s-new-age/helm-charts/pull/77) — preview AppProject allows `ClusterRoleBinding` for that hook.
+- [helm-charts #78](https://github.com/Deepidoo-s-new-age/helm-charts/pull/78) — ResourceQuota on the hook Job.
+- [helm-charts #79](https://github.com/Deepidoo-s-new-age/helm-charts/pull/79) — kubectl image attempt (superseded).
+- [helm-charts #80](https://github.com/Deepidoo-s-new-age/helm-charts/pull/80) — **in-cluster Python** `ghcr` copy (ConfigMap + `python:3.12-alpine`).
+
+### auth-service `main` CI
+
+[auth-service #39](https://github.com/Deepidoo-s-new-age/auth-service/pull/39) formats `backend/scripts/seed_local_scopes.py` for `ruff format --check`. **`test / test` is green on the PR**; merge to restore green `main` pushes.
+
+### Still accepted debt (unchanged from the plan)
+
+- Preview URL uses `sslip.io`, not `*.preview.<domain>` + cert-manager.
+- `platform-api` preview calls **preproduction** `auth-service`, not a co-located auth preview.
+- Sweeper still backstops `ghcr` copy; hook is primary once sync completes.
 
 ## Phases not started
 
