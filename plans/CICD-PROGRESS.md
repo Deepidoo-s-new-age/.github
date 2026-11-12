@@ -142,7 +142,7 @@ The admin UI depends on `@deepidoo-s-new-age/deesplay` `1.0.1`, with no sibling 
 
 The architecture job fails when a route is missing from `docs/module.yaml` and is not listed in `docs/architecture-baseline.txt`. `auth-service` has 20 baselined gaps (19 routes and `missing-module-yaml`), and `platform-api` has 92. Neither foundation has a module contract. Both committed `docs/openapi.json` files matched the generated spec on 26 October, so the same-commit compare (`ci-v1.0.8` and later) does not turn the callers red; [auth-service #21](https://github.com/Deepidoo-s-new-age/auth-service/pull/21) and [platform-api #62](https://github.com/Deepidoo-s-new-age/platform-api/pull/62) merged green on `ci-v1.0.9`.
 
-`python-service.yml` at `ci-v1.0.6` runs `lint-imports` when `[tool.importlinter]` is present. Route handlers may not import SQLAlchemy. `auth-service` also forbids `app.models` in handlers, and `platform-api` forbids `app.repositories`. Each service forbids importing the other through an empty dev stub, which the production image does not contain ([auth-service #12](https://github.com/Deepidoo-s-new-age/auth-service/pull/12), [platform-api #55](https://github.com/Deepidoo-s-new-age/platform-api/pull/55)). dependency-cruiser runs in the `auth-service` web job.
+`python-service.yml` at `ci-v1.0.6` runs `lint-imports` when `[tool.importlinter]` is present. Route handlers may not import SQLAlchemy directly: `auth-service` forbids `app.models` in handlers, and `platform-api` forbids `app.repositories`. dependency-cruiser runs in the `auth-service` web job.
 
 Semgrep 1.181.0 runs `p/owasp-top-ten`, `p/python`, and `p/javascript` against the base commit, or `HEAD^` on `main`.
 

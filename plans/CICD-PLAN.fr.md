@@ -291,10 +291,7 @@ semgrep scan --error --config p/owasp-top-ten --config p/python --config p/javas
 
 Épingler la version du CLI dans le workflow. Si le premier run est bruyant, échouer seulement sur les trouvailles absentes d’une baseline commitée. Le job couvre A04, A05, une partie de A01 et une partie de A10. Il ne remplace pas les tests de contrôle d’accès ni les contrôles de chaîne d’approvisionnement du tableau ci-dessus.
 
-Ajouter des contrats import-linter :
-
-- un service n’importe pas le code applicatif d’un autre service ;
-- les handlers de routes ne possèdent pas le SQL.
+Ajouter des contrats import-linter (par service), par exemple les handlers de routes ne possèdent pas le SQL.
 
 Ajouter dependency-cruiser pour les frontends une fois la phase 4 verte : l’UI d’un module n’importe pas un autre service.
 

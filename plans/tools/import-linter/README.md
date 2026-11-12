@@ -8,13 +8,12 @@ Fail when Python imports cross a boundary the architecture forbids.
 
 ## Problem it resolves
 
-A module that imports `platform-api` application code, or a route handler that imports the SQLAlchemy session and writes SQL, breaks the rule that services talk over HTTP and repositories own SQL. Review can miss that. A contract check does not.
+A route handler that imports the SQLAlchemy session and writes SQL breaks layering (repositories own SQL). Review can miss that. A contract check does not.
 
 ## How we use it
 
-Phase 5, inside `python-service.yml`, after a config exists in the service. Contracts to encode:
+Phase 5, inside `python-service.yml`, after a config exists in the service. Contracts to encode (per service), for example:
 
-- this service does not import another service’s application package;
 - route modules do not import the DB session; repositories do.
 
 Existing violations go in a baseline so the first day is not a rewrite. New violations fail.
