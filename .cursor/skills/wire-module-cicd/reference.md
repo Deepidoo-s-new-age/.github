@@ -7,7 +7,7 @@ Canonical implementations: **`auth-service`** (profile A), **`platform-api`** (p
 | Path | Purpose |
 |---|---|
 | `.github/workflows/ci.yml` | `python-service`, `architecture`, `security`, `vue-app`, `image`, custom `frontend-image`, `promote` |
-| `.github/workflows/preview.yml` | PR label `preview` → GHCR `:sha` backend + frontend |
+| `.github/workflows/preview.yml` | Thin caller → `ci-workflows` `preview.yml` (`ci-v1.0.13+`); PR label `preview` → GHCR `:sha` |
 | `backend/pyproject.toml` | `deepilot`, contracts git pin, ruff, import-linter |
 | `backend/uv.lock` | Frozen deps |
 | `backend/coverage-baseline.txt` | Coverage ratchet floor |
