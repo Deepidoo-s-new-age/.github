@@ -30,8 +30,7 @@ the repo is empty.
 | **B — API only** | `platform-api` | Single FastAPI tree (`backend/` or repo root), one image, single promote |
 | **C — Business module** | A or B + `docs/module.yaml` | Same CI as A/B; Helm names follow `<module-id>-backend` / optional `frontend-web` |
 
-Previews and promote are **implemented per repo** today (not a shared
-`ci-workflows` workflow). Copy from `auth-service` or `platform-api` and rename.
+Previews use **`ci-workflows` `preview.yml`** (pin `ci-v1.0.13+`); promote remains **per repo** (helm-charts digest PRs). Copy `ci-workflows/examples/preview-service.yml` or `auth-service` / `platform-api` callers.
 
 ## Hard rules
 
@@ -229,9 +228,9 @@ Run `helm-charts` CI locally if possible: helmfile render / kubeconform per repo
 
 Only if the module needs PR namespaces:
 
-1. **`preview.yml`** in the service repo — copy `auth-service/.github/workflows/preview.yml`, rename images/concurrency groups.
+1. **`preview.yml`** — copy `ci-workflows/examples/preview-service.yml`, set `service_id`, image names, and optional `build_frontend`; pin `@ci-v1.0.13` after the tag exists.
 2. **`argocd/apps/preview-applicationsets.yaml`** — new ApplicationSet (copy `preview-auth-service` block). Each preview namespace is a **preproduction lookalike**: Postgres, Redis, existing foundations at **companion** digests, PR service at **`head_sha`**, migrate+seed, in-cluster service URLs.
-3. **`environments/preview/companion-*.values.yaml`** — pin sibling foundations to preproduction digests; bump on promote.
+3. **`environments/preview/companion-*.values.yaml`** — preproduction digest; promote runs `sync_companion_digests.py` in the service promote job.
 4. **`charts/preview-namespace/values.yaml`** / **`preview-sweeper`** — add repo name to allowed set; raise quota if the stack grows.
 5. Label **`preview`** on PR; several labeled PRs may run **concurrently** (one namespace each).
 
@@ -284,6 +283,5 @@ Report **tag pins**, **open PR URLs**, and **debt** (rulesets on Free plan, miss
 
 - GitHub rulesets / branch protection (org plan limits)
 - SOPS / External Secrets (phase 9 supply chain)
-- Shared reusable **preview** workflow in `ci-workflows`
 - `scheduler` Celery worker charts (see RULE-GLOBAL-SCHEDULER)
 - Scopes in `auth-service` / Play integration

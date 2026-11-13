@@ -1,6 +1,6 @@
 # CI/CD progress — Deepidoo-s-new-age
 
-Status of [CICD-PLAN.md](CICD-PLAN.md) as of 12 November 2026, 12:05 UTC. Git, GitHub, and the stress-test cluster were read for this status.
+Status of [CICD-PLAN.md](CICD-PLAN.md) as of 13 November 2026, 14:30 UTC. Git, GitHub, and the stress-test cluster were read for this status.
 
 A phase is concluded for a repository when that phase’s finish line is true for it. A later phase that is not started leaves the repository stopped at the last concluded phase.
 
@@ -19,7 +19,7 @@ How a change reaches preproduction and production is [helm-charts/docs/deploying
 | 4 — deesplay | Concluded for `Deepidoo-s-new-age/deesplay` and the `auth-service` web job |
 | 5 — Architecture and security gates | Finish line met on the cloned repositories. The nightly preproduction smoke is still absent |
 | 6 — `helm-charts` and promotion | Concluded. Argo CD `v3.5.6` applies `main`. Production values carry the digests promoted on 26 October. Preproduction values are newer; production moves only when **Promote to production** runs |
-| 7 — Preview environments | **Concluded on cluster** (12 Nov 2026); **target shape updated locally** (Nov 2026): each preview is a **preproduction lookalike** (full auth + platform stack, migrate/seed, companion digests). Sweeper hardening for stuck `pr-*` Applications. Merge `helm-charts` when ready — see [Phase 7](#phase-7--preview-namespaces) and [previews.md](https://github.com/Deepidoo-s-new-age/helm-charts/blob/main/docs/previews.md). |
+| 7 — Preview environments | **Concluded** (12 Nov 2026 on cluster; **full-stack shape on `helm-charts` `main`** since [#98](https://github.com/Deepidoo-s-new-age/helm-charts/pull/98)). Preproduction lookalike per PR, companion digests synced on promote ([#100](https://github.com/Deepidoo-s-new-age/helm-charts/pull/100), auth [#45](https://github.com/Deepidoo-s-new-age/auth-service/pull/45), platform [#84](https://github.com/Deepidoo-s-new-age/platform-api/pull/84)). Shared preview workflow in `ci-workflows` — see [Phase 7](#phase-7--preview-namespaces) and [previews.md](https://github.com/Deepidoo-s-new-age/helm-charts/blob/main/docs/previews.md). |
 | 8 — Telemetry and uptime | Open on cluster (Tempo/Loki/Prometheus/Grafana, dashboards). Not recorded here in detail — see prior work on `helm-charts` `main`. |
 | 9 — Supply chain | Not started |
 | 10 — SonarQube | Not started |
@@ -82,10 +82,10 @@ Recorded here so the plan text stays the target:
 - **Apply path.** Phase 6 steps 4 and 9 are done in the order the plan allows: Argo CD replaced the Helmfile apply. The helmfiles remain only as a CI render check. Phase 7's "`helmfile destroy` on close" is implemented as an Argo CD pull-request generator whose Application finalizer deletes the namespace.
 - **Preview address.** Previews use `http://pr-<service>-<number>.preview.51.178.114.227.sslip.io`. The plan's `*.preview.<domain>` record, the wildcard certificate, and cert-manager are not in place. This belongs to phase 7.
 - **Fixture user.** **Resolved in helm-charts (local):** full-stack previews run migrate+seed for auth and platform in the preview namespace (same fixture users as preproduction).
-- **Shared preview workflow.** The preview image build is a copy in each service, not a reusable workflow in `ci-workflows`. Move it there before a third service gets a preview.
+- **Shared preview workflow.** **In progress:** `ci-workflows/.github/workflows/preview.yml` (`ci-v1.0.13`); callers shrink to triggers + `with` inputs. Until the tag is on `main`, services may still run the old inlined workflow.
 - **Secrets in git.** The Postgres password and `JWT_SECRET` are inert placeholder values in git for every namespace. `runtime-env` ([#18](https://github.com/Deepidoo-s-new-age/helm-charts/pull/18)) is the interim for production. SOPS or External Secrets is phase 9. Changing the Postgres password also needs `ALTER USER` on the existing volume.
 - **Cluster.** Preproduction and production run on the cluster whose kubeconfig is `configs/stress-test.yml`, next to the `tsm-*` and `new-age-load` namespaces.
-- **No migrations yet.** No migration runs: neither service has an Alembic command, and `charts/job` has no Argo CD Application.
+- **Migrations.** Preproduction and full-stack previews run migrate+seed jobs via `charts/job` and Argo sync waves. **Production** migrate is enabled on `helm-charts` `main` ([#98](https://github.com/Deepidoo-s-new-age/helm-charts/pull/98)); services may still lack Alembic in CI—schema setup on startup remains a fallback where documented.
 - **Baselines act as a waiver list.** Foundations have no `docs/module.yaml`, so their architecture baseline is used as a waiver list. `auth-service` added three `/v1/acl/modules` routes to it in `f117dba`.
 - **Renovate.** The GitHub App is not installed, so `renovate.json` opens nothing.
 
@@ -174,11 +174,11 @@ A push to `main` in a service publishes `ghcr.io/deepidoo-s-new-age/<service>:<g
 
 Argo CD `v3.5.6` in namespace `argocd` applies `main` ([#12](https://github.com/Deepidoo-s-new-age/helm-charts/pull/12)). `helm-charts` lists no repository secrets; the secrets of its `preproduction` and `production` environments were not listed. No service repository contains `kubectl`. The clone credential is the read-only deploy key `argocd-helm-charts`. The kubeconfig stays in gitignored `configs/`. Repeating the install is [docs/cluster.md](https://github.com/Deepidoo-s-new-age/helm-charts/blob/main/docs/cluster.md) ([#13](https://github.com/Deepidoo-s-new-age/helm-charts/pull/13)).
 
-The migration job is off: neither service has an Alembic command. `auth-service` creates schema `auth` on startup.
+Migrate+seed run in preproduction and preview namespaces via Argo job charts; production migrate is enabled in helm values ([#98](https://github.com/Deepidoo-s-new-age/helm-charts/pull/98)).
 
 ## Phase 7 — preview namespaces
 
-**Concluded** for the plan finish line on the stress-test cluster (12 Nov 2026). **Current target** (documented in `helm-charts/docs/previews.md`, pending merge to `helm-charts` `main`):
+**Concluded** for the plan finish line on the stress-test cluster (12 Nov 2026). **Current behaviour** is on `helm-charts` `main` ([#98](https://github.com/Deepidoo-s-new-age/helm-charts/pull/98), [previews.md](https://github.com/Deepidoo-s-new-age/helm-charts/blob/main/docs/previews.md)):
 
 | Topic | Behaviour |
 |--------|-----------|
@@ -195,7 +195,7 @@ The migration job is off: neither service has an Alembic command. `auth-service`
 |--------|----------|
 | Labeled PR → URL + `/health` 200 | **auth-service** [PR #38](https://github.com/Deepidoo-s-new-age/auth-service/pull/38): `pr-auth-service-38`, Argo **Synced / Healthy**, `http://pr-auth-service-38.preview.51.178.114.227.sslip.io/health` → 200. |
 | platform-api preview path | [PR #78](https://github.com/Deepidoo-s-new-age/platform-api/pull/78) (retry after infra fixes); Preview workflow green. Full sync exercised `ghcr` hook fixes on `helm-charts` `main`. |
-| Close PR → namespace gone | **Partial → mitigated in helm-charts.** Closing [platform-api #77](https://github.com/Deepidoo-s-new-age/platform-api/pull/77) did not immediately remove a stuck `pr-platform-api-77` after a failed sync. Same class for [platform-api #78](https://github.com/Deepidoo-s-new-age/platform-api/pull/78) (merged, no `preview` label): namespace was gone but Argo Application `pr-platform-api-78` stayed **Terminating** until the finalizer was cleared manually (13 Nov 2026). **Fix:** preview sweeper now lists ApplicationSet-owned `pr-*` Applications, checks GitHub, and deletes orphans or clears finalizers when the namespace is already gone (merge `helm-charts` when ready). |
+| Close PR → namespace gone | **Partial → mitigated on `main`.** Closing [platform-api #77](https://github.com/Deepidoo-s-new-age/platform-api/pull/77) did not immediately remove a stuck `pr-platform-api-77` after a failed sync. [platform-api #78](https://github.com/Deepidoo-s-new-age/platform-api/pull/78): namespace gone but Application `pr-platform-api-78` stayed **Terminating** until the finalizer was cleared manually (13 Nov 2026). **Fix (shipped in #98):** preview sweeper reconciles ApplicationSet-owned `pr-*` Applications, checks GitHub, deletes orphans, and clears finalizers when the namespace is already gone. |
 
 ### helm-charts fixes shipped during closeout (on `main`)
 
@@ -205,16 +205,18 @@ The migration job is off: neither service has an Alembic command. `auth-service`
 - [helm-charts #79](https://github.com/Deepidoo-s-new-age/helm-charts/pull/79) — kubectl image attempt (superseded).
 - [helm-charts #80](https://github.com/Deepidoo-s-new-age/helm-charts/pull/80) — **in-cluster Python** `ghcr` copy (ConfigMap + `python:3.12-alpine`).
 
-### auth-service `main` CI
+### Shipped after the first preview closeout (13 Nov 2026)
 
-[auth-service #39](https://github.com/Deepidoo-s-new-age/auth-service/pull/39) formats `backend/scripts/seed_local_scopes.py` for `ruff format --check`. **`test / test` is green on the PR**; merge to restore green `main` pushes.
+- [helm-charts #98](https://github.com/Deepidoo-s-new-age/helm-charts/pull/98) — full-stack previews, sweeper hardening, production migrate enabled.
+- [helm-charts #100](https://github.com/Deepidoo-s-new-age/helm-charts/pull/100) — `tools/sync_companion_digests.py`; promote PRs keep companion values aligned with preproduction for CI.
+- [auth-service #45](https://github.com/Deepidoo-s-new-age/auth-service/pull/45), [platform-api #84](https://github.com/Deepidoo-s-new-age/platform-api/pull/84) — promote jobs run the sync script before opening `helm-charts` PRs.
 
-### Still accepted debt (unchanged from the plan)
+### Still accepted debt
 
 - Preview URL uses `sslip.io`, not `*.preview.<domain>` + cert-manager.
-- Companion digests in `environments/preview/companion-*.values.yaml` must stay aligned with preproduction on promote (no automated bump yet).
 - Sweeper still backstops `ghcr` copy; hook is primary once sync completes.
 - Full-stack preview quota (~14 pods / namespace) limits how many concurrent labeled PRs the stress-test cluster can hold.
+- **Pending next preview:** confirm a preview pod cannot reach `postgres.production.svc.cluster.local:5432` (manual check; no labeled PR on cluster on 13 Nov 2026).
 
 ## Phases not started
 
