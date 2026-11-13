@@ -41,7 +41,6 @@ Chaque fiche a une section Installation : où l’outil est installé, et commen
 | [Loki](loki/README.fr.md) | 8 | Logs |
 | [Tempo](tempo/README.fr.md) | 8 | Traces |
 | [Grafana](grafana/README.fr.md) | 8 | Tableaux de bord |
-| [Gatus](gatus/README.fr.md) | 8 | Disponibilité depuis l’extérieur du cluster |
 | [Sloth](sloth/README.fr.md) | 8 | Règles de SLO |
 | [Pyrra](pyrra/README.fr.md) | 8, alternative à Sloth | Règles de SLO et interface |
 | [Trivy](trivy/README.fr.md) | 9 | Paquets OS dans l’image |

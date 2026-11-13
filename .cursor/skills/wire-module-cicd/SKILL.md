@@ -230,11 +230,12 @@ Run `helm-charts` CI locally if possible: helmfile render / kubeconform per repo
 Only if the module needs PR namespaces:
 
 1. **`preview.yml`** in the service repo — copy `auth-service/.github/workflows/preview.yml`, rename images/concurrency groups.
-2. **`argocd/apps/preview-applicationsets.yaml`** — new ApplicationSet (copy `preview-auth-service` block).
-3. **`charts/preview-namespace/values.yaml`** / **`preview-sweeper`** — add repo name to allowed set.
-4. Label **`preview`** on PR; images tagged `:head_sha`.
+2. **`argocd/apps/preview-applicationsets.yaml`** — new ApplicationSet (copy `preview-auth-service` block). Each preview namespace is a **preproduction lookalike**: Postgres, Redis, existing foundations at **companion** digests, PR service at **`head_sha`**, migrate+seed, in-cluster service URLs.
+3. **`environments/preview/companion-*.values.yaml`** — pin sibling foundations to preproduction digests; bump on promote.
+4. **`charts/preview-namespace/values.yaml`** / **`preview-sweeper`** — add repo name to allowed set; raise quota if the stack grows.
+5. Label **`preview`** on PR; several labeled PRs may run **concurrently** (one namespace each).
 
-**platform-api** pattern: backend only. **auth-service**: backend + frontend ApplicationSet sources.
+**auth-service**: backend + frontend on the PR; **platform-api**: backend on the PR. Both ApplicationSets today also deploy the **other** foundation as companion.
 
 Document in `helm-charts/docs/previews.md` when behavior differs.
 

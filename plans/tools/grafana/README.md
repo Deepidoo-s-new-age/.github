@@ -8,7 +8,7 @@ One UI for metrics, logs, traces, and the uptime probes.
 
 ## Problem it resolves
 
-Four tools with four UIs means nobody looks. Phase 8 puts Prometheus or Mimir, Loki, Tempo, and Gatus behind Grafana. A reused dashboard JSON in `helm-charts` shows rate, errors, and latency for each service so module number five does not hand-build panels.
+Four tools with four UIs means nobody looks. Phase 8 puts Prometheus or Mimir, Loki, Tempo, and the blackbox uptime metrics behind Grafana. A reused dashboard JSON in `helm-charts` shows rate, errors, and latency for each service so module number five does not hand-build panels.
 
 ## How we use it
 
@@ -16,7 +16,7 @@ Dashboards and alert rules are files in git, provisioned into Grafana. Editing a
 
 ## Installation
 
-A Helm chart in the cluster, in front of Prometheus or Mimir, Loki, Tempo, and the Gatus results. Dashboards and alert rules are files in `helm-charts`, provisioned into Grafana.
+A Helm chart in the cluster, in front of Prometheus or Mimir, Loki, and Tempo. Dashboards and alert rules are files in `helm-charts`, provisioned into Grafana.
 
 ## Constraints
 

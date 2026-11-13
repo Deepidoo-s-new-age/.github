@@ -63,7 +63,7 @@ pull request
   → approbation humaine, puis helmfile apply
 ```
 
-Un namespace de preview installe seulement le service qui a changé et le pointe vers les `auth-service` et `platform-api` de préproduction. Une pull request qui modifie ces deux dépôts, ou `deepidoo-contracts`, est le cas qui déploie plus d’une release.
+Un namespace de preview est un **clone de la préproduction** : Postgres, Redis, auth-service et platform-api (migrate + seed) dans un seul `pr-<repo>-<number>`. La pull request labelisée tourne en `head_sha` ; les autres foundations utilisent le digest de préproduction (fichiers `companion` dans `helm-charts`). Plusieurs PR labelisées peuvent coexister (un namespace chacune). Détail : [previews.md](https://github.com/Deepidoo-s-new-age/helm-charts/blob/main/docs/previews.md).
 
 ## 5. Outils
 
@@ -94,7 +94,7 @@ Utiliser ceux-ci. Ne pas ajouter un second programme qui fait le même travail. 
 | Politique cluster | Kyverno | cluster de production, après que les digests sont les seuls tags |
 | Secrets à l’exécution | SOPS ou External Secrets, exemples inertes dans git | `helm-charts` |
 | Traces, logs, métriques | OpenTelemetry vers Prometheus ou Mimir, Loki, Tempo, Grafana | cluster plus chaque app FastAPI |
-| Disponibilité | Gatus, sondé depuis l’extérieur du cluster | le même Grafana |
+| Disponibilité | blackbox Prometheus → Ingress `/health`, tableau Grafana **Uptime** | dans le cluster ; pas de sonde hors cluster pour l’instant |
 | SLO | Sloth ou Pyrra | trois parcours utilisateur |
 | Tableau de qualité | SonarQube Community Build | `main` seulement, optionnel, pas un gate de merge |
 | Montées de version | Renovate, Release Please (ou un équivalent qui ouvre une PR de release) | toute l’organisation |
@@ -339,17 +339,15 @@ Ligne d’arrivée : la préproduction et la production exécutent un digest qui
 
 ### Phase 7 — Environnements de preview
 
-Une preview est un namespace `pr-<repo>-<number>` dans le même cluster.
+Une preview est un namespace `pr-<repo>-<number>` dans le même cluster (une par PR ouverte labelisée ; plusieurs en parallèle possibles).
 
 - Déclencheur : label `preview` sur la pull request, ou un `workflow_dispatch`.
-- Installer le service qui a changé, plus son frontend quand ce frontend a une image.
-- Pointer le service vers les `auth-service` et `platform-api` de préproduction.
-- Déployer une copie d’auth ou de platform seulement quand la pull request modifie ces dépôts ou `deepidoo-contracts`.
-- Hôte d’ingress `pr-<repo>-<number>.preview.<domain>`. Remplacer `_` dans le nom du dépôt par `-`, parce qu’un label DNS ne peut pas contenir `_`. La pull request 12 de `deep_desk` est `pr-deep-desk-12.preview.<domain>`.
+- **Stack foundations complète** : Postgres, Redis, pgAdmin, auth-service (API + UI ACL si besoin), platform-api — mêmes jobs migrate/seed qu’en préproduction, données de fixture (pas un dump prod).
+- **Image de la PR** (`head_sha`) sur le service testé ; **digest préproduction** sur les releases companion (`environments/preview/companion-*.values.yaml`).
+- Appels in-cluster (ex. `AUTH_SERVICE_URL=http://auth-service-backend:8000`). Pas d’appel aux APIs ou bases de préproduction ; pas d’export télémétrie vers la préproduction (egress limité au namespace).
+- Ingress : API principale `pr-<repo>-<number>.preview.<domain>` ; hôtes companion dans [previews.md](https://github.com/Deepidoo-s-new-age/helm-charts/blob/main/docs/previews.md).
 - Quota de ressources sur le namespace.
-- Utilisateur de fixture, pas un dump de production.
-- À la fermeture de la pull request, `helmfile destroy` de cette release.
-- Un job quotidien supprime les namespaces de plus de 96 heures.
+- À la fermeture de la PR ou retrait du label : suppression Application + namespace (sweeper : PRs périmées, 96 h, Applications bloquées).
 
 Enregistrements DNS, tous dirigés vers l’ingress du cluster. Ouvrir une pull request ne crée pas d’enregistrement.
 
@@ -371,10 +369,9 @@ Le faire après la phase 6. Un tableau de bord est plus fiable quand chaque pod 
 2. Grafana lit Prometheus ou Mimir, Loki et Tempo.
 3. Un JSON de dashboard dans `helm-charts`, réutilisé par service : débit, taux d’erreur, latence.
 4. Propager l’en-tête de trace sur les appels d’un module vers platform et auth.
-5. Trois parcours, alerte sur le burn rate : login, lecture d’un contenu, une action de module. Sloth ou Pyrra génère les règles.
-6. Gatus sonde ces parcours depuis l’extérieur du cluster. Une sonde dans le cluster reste verte alors que les utilisateurs n’atteignent pas l’ingress.
+5. Optionnel plus tard : trois parcours, alerte burn rate (login, lecture contenu, action module). Sloth ou Pyrra génère les règles à partir des métriques HTTP OTLP.
 
-Ligne d’arrivée : une requête de préproduction montre une trace à travers les services qu’elle a touchés, et une sonde extérieure passe au rouge quand l’ingress est down.
+Ligne d’arrivée : une requête de préproduction montre une trace à travers les services touchés ; Grafana **Service**, **Errors** et **Uptime** (`probe_success` sur `/health` via blackbox dans le cluster) reflètent trafic et joignabilité. Des curls manuels ou scriptés couvrent les routes que `/health` ne teste pas.
 
 ### Phase 9 — Chaîne d’approvisionnement
 
@@ -454,6 +451,6 @@ Ne pas pointer un workflow New Age vers `Deepidoo/helm_charts`. Ne pas publier u
 - `helm-charts` est le seul dépôt qui peut changer ce que le cluster exécute.
 - La préproduction et la production documentent le digest. L’apply de production exige un relecteur.
 - Les namespaces de preview expirent.
-- Le login, une lecture de contenu et une action de module ont une trace, un SLO et une sonde extérieure.
+- Le login, une lecture de contenu et une action de module ont une trace Tempo et des métriques sur les bonnes routes ; la dispo repose sur le blackbox in-cluster sur `/health` (SLO Sloth et sondes hors cluster : optionnel plus tard).
 - `deepidoo-contracts` et deesplay sont consommés comme des versions.
 - Les agents s’arrêtent à une pull request verte.

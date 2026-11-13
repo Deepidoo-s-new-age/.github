@@ -82,7 +82,7 @@ Examples to copy before customization:
 | `environments/preproduction/auth-service-backend.values.yaml` | Digest, env, migrate/seed, ingress, DEEPILOT |
 | `environments/preproduction/auth-service-frontend.values.yaml` | Frontend digest, proxy to backend |
 | `environments/production/*` | Same shape; digest from promote workflow |
-| `environments/preview/*` | Preview overrides |
+| `environments/preview/*` | PR values + `companion-*` (preproduction digest); full-stack preproduction lookalike per `pr-*` namespace |
 | `environments/preproduction/helmfile.yaml` | `auth-service-backend-migrate`, backend, (frontend in full file) |
 | `environments/production/helmfile.yaml` | Production releases |
 | `argocd/apps/applications.yaml` | `preproduction-auth-service`, `production-auth-service` |

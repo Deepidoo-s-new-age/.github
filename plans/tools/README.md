@@ -41,7 +41,6 @@ Each sheet has an Installation section: where the tool is installed, and how it 
 | [Loki](loki/README.md) | 8 | Logs |
 | [Tempo](tempo/README.md) | 8 | Traces |
 | [Grafana](grafana/README.md) | 8 | Dashboards |
-| [Gatus](gatus/README.md) | 8 | Uptime from outside the cluster |
 | [Sloth](sloth/README.md) | 8 | SLO rules |
 | [Pyrra](pyrra/README.md) | 8, alternative to Sloth | SLO rules and UI |
 | [Trivy](trivy/README.md) | 9 | OS packages in the image |
