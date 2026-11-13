@@ -8,7 +8,7 @@ Une interface pour les métriques, les logs, les traces et les sondes de disponi
 
 ## Problème résolu
 
-Quatre outils et quatre interfaces, et personne ne regarde. La phase 8 met Prometheus ou Mimir, Loki, Tempo et Gatus derrière Grafana. Un JSON de tableau de bord réutilisé dans `helm-charts` montre le débit, les erreurs et la latence de chaque service, pour que le module numéro cinq ne construise pas ses panneaux à la main.
+Quatre outils et quatre interfaces, et personne ne regarde. La phase 8 met Prometheus ou Mimir, Loki, Tempo et les métriques blackbox de disponibilité derrière Grafana. Un JSON de tableau de bord réutilisé dans `helm-charts` montre le débit, les erreurs et la latence de chaque service, pour que le module numéro cinq ne construise pas ses panneaux à la main.
 
 ## Comment on l’utilise
 
@@ -16,7 +16,7 @@ Les tableaux de bord et les règles d’alerte sont des fichiers dans git, provi
 
 ## Installation
 
-Un chart Helm dans le cluster, devant Prometheus ou Mimir, Loki, Tempo et les résultats Gatus. Les tableaux et les règles d’alerte sont des fichiers dans `helm-charts`, provisionnés dans Grafana.
+Un chart Helm dans le cluster, devant Prometheus ou Mimir, Loki et Tempo. Les tableaux et les règles d’alerte sont des fichiers dans `helm-charts`, provisionnés dans Grafana.
 
 ## Contraintes
 

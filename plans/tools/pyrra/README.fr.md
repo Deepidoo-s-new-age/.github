@@ -20,7 +20,7 @@ Une release Helm dans le cluster, le chart Pyrra et ses CRD, à la place de Slot
 
 ## Contraintes
 
-Un service de plus à faire tourner et à authentifier. Il a besoin de Prometheus. Il ne remplace pas Gatus. Un SLO dans le cluster ne prouve pas que l’ingress est joignable.
+Un service de plus à faire tourner et à authentifier. Il a besoin de Prometheus. La dispo Ingress `/health` reste le tableau **Uptime** blackbox ; Pyrra couvre les budgets d’erreur sur les métriques HTTP, pas des sondes de parcours hors cluster.
 
 ## Avantages
 

@@ -20,7 +20,7 @@ A Helm release in the cluster, the Pyrra chart and its CRDs, in place of Sloth. 
 
 ## Constraints
 
-Another service to run and authenticate. It needs Prometheus. It does not replace Gatus. An SLO inside the cluster does not prove the ingress is reachable.
+Another service to run and authenticate. It needs Prometheus. Uptime on Ingress `/health` stays the blackbox **Uptime** dashboard; Pyrra covers error budgets on HTTP metrics, not journey probes outside the cluster.
 
 ## Pros
 

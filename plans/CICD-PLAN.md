@@ -63,7 +63,7 @@ pull request
   → human approval, then helmfile apply
 ```
 
-A preview namespace installs only the service that changed and points it at preproduction `auth-service` and `platform-api`. A pull request that changes those two, or `deepidoo-contracts`, is the case that deploys more than one release.
+A preview namespace is a **preproduction lookalike**: Postgres, Redis, auth-service, and platform-api (migrate + seed) in one `pr-<repo>-<number>` namespace. The labeled pull request runs at `head_sha`; companion charts pin the other foundations to the current preproduction digest. Several labeled pull requests may run **concurrently** (one namespace each). Canonical detail: [helm-charts/docs/previews.md](https://github.com/Deepidoo-s-new-age/helm-charts/blob/main/docs/previews.md).
 
 ## 5. Tools
 
@@ -94,7 +94,7 @@ Use these. Do not add a second program that does the same job. A cheatsheet for 
 | Cluster policy | Kyverno | production cluster, after digests are the only tags |
 | Secrets at runtime | SOPS or External Secrets, inert examples in git | `helm-charts` |
 | Traces, logs, metrics | OpenTelemetry into Prometheus or Mimir, Loki, Tempo, Grafana | cluster plus each FastAPI app |
-| Uptime | Gatus, probed from outside the cluster | same Grafana |
+| Uptime | Prometheus blackbox exporter → Ingress `/health`, Grafana **Uptime** dashboard | in-cluster; no separate probe outside the cluster for now |
 | SLO | Sloth or Pyrra | three user journeys |
 | Quality dashboard | SonarQube Community Build | `main` only, optional, not a merge gate |
 | Version bumps | Renovate, Release Please (or an equivalent that opens a release PR) | org-wide |
@@ -339,17 +339,15 @@ Finish line: preproduction and production run a digest that appears in a merged 
 
 ### Phase 7 — Preview environments
 
-A preview is a namespace `pr-<repo>-<number>` in the same cluster.
+A preview is a namespace `pr-<repo>-<number>` in the same cluster (one per labeled open pull request; many may run at once).
 
 - Trigger: pull request label `preview`, or a `workflow_dispatch`.
-- Install the service that changed, plus its frontend when that frontend has an image.
-- Point the service at preproduction `auth-service` and `platform-api`.
-- Deploy a copy of auth or platform only when the pull request changes those repositories or `deepidoo-contracts`.
-- Ingress host `pr-<repo>-<number>.preview.<domain>`. Replace `_` in the repository name with `-`, because a DNS label cannot contain `_`. `deep_desk` pull request 12 is `pr-deep-desk-12.preview.<domain>`.
+- **Full foundation stack** in that namespace: Postgres, Redis, pgAdmin, auth-service (API + ACL UI when relevant), platform-api — same migrate/seed commands as preproduction, fixture data (not a production dump).
+- **PR image** on the service under test (`head_sha`); **preproduction digest** on companion releases (`environments/preview/companion-*.values.yaml`).
+- In-cluster wiring: e.g. `AUTH_SERVICE_URL=http://auth-service-backend:8000`. No dependency on preproduction APIs or databases (NetworkPolicy defaults to namespace-local egress only; no telemetry export to preproduction).
+- Ingress: `pr-<repo>-<number>.preview.<domain>` for the primary API; companion hosts documented in [previews.md](https://github.com/Deepidoo-s-new-age/helm-charts/blob/main/docs/previews.md). Replace `_` in the repository name with `-` in DNS labels.
 - Resource quota on the namespace.
-- Fixture user, not a production dump.
-- On pull request close, `helmfile destroy` that release.
-- A daily job deletes namespaces older than 96 hours.
+- On pull request close or label removal, Argo CD deletes the Application and namespace (preview sweeper: stale PRs, 96h expiry, stuck Application cleanup).
 
 DNS records, all aimed at the cluster ingress. Opening a pull request does not create a record.
 
@@ -371,10 +369,9 @@ Do this after phase 6. A dashboard is easier to trust when each pod has a digest
 2. Grafana reads Prometheus or Mimir, Loki, and Tempo.
 3. One dashboard JSON in `helm-charts`, reused per service: request rate, error rate, latency.
 4. Propagate the trace header on calls from a module to platform and auth.
-5. Three journeys, alert on burn rate: login, read a content, one module action. Sloth or Pyrra generates the rules.
-6. Gatus probes those journeys from outside the cluster. An in-cluster probe stays green while users cannot reach the ingress.
+5. Optional later: three journeys, alert on burn rate (login, read a content, one module action). Sloth or Pyrra generates the rules from OTLP HTTP metrics.
 
-Finish line: a preproduction request shows one trace across the services it touched, and an outside probe goes red when the ingress is down.
+Finish line: a preproduction request shows one trace across the services it touched; Grafana **Service**, **Errors**, and **Uptime** (`probe_success` on Ingress `/health` via blackbox in the cluster) reflect real traffic and reachability. Manual or scripted journey curls exercise routes that `/health` does not cover.
 
 ### Phase 9 — Supply chain
 
@@ -454,6 +451,6 @@ Do not point a New Age workflow at `Deepidoo/helm_charts`. Do not publish a New 
 - `helm-charts` is the only repository that can change what the cluster runs.
 - Preproduction and production document the digest. Production apply requires a reviewer.
 - Preview namespaces expire.
-- Login, a content read, and one module action have a trace, an SLO, and an outside probe.
+- Login, a content read, and one module action have a trace in Tempo and metrics on the right routes; uptime is in-cluster blackbox on `/health` (Sloth SLOs and journey probes outside the cluster are optional later).
 - `deepidoo-contracts` and deesplay are consumed as versions.
 - Agents stop at a green pull request.
