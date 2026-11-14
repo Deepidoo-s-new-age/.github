@@ -1,0 +1,69 @@
+---
+description: Tenant isolation — JWT organisation vs X-ORGANIZATION-ID current organisation, visibility flags, server-side enforcement.
+globs: **/*.{py,ts,tsx,vue,js,mjs,mts}
+alwaysApply: false
+---
+# Rule name: Tenant organisation (X-ORGANIZATION-ID)
+
+
+## Rule
+
+Tenant isolation is enforced **server-side**, from the JWT. Front-end filters and
+client-supplied `organisation_id` values are never an authorization mechanism.
+
+### Vocabulary
+
+| Term | Source | Role |
+|------|--------|------|
+| **JWT organisation** (home) | `organisation_id` claim of the user JWT | The user's real organisation — **absolute bound** |
+| **Current organisation** (acting) | `X-ORGANIZATION-ID` header; absent = JWT organisation | Organisation the user is working in |
+| **Tree(org)** | `organisation_closures` (self + descendants) | Perimeter an organisation manages |
+
+- The header is accepted only if current org ∈ tree(JWT org); otherwise **403**.
+- Invalid header (empty, non-integer, < 1) → **400**.
+
+### Visibility (user JWT)
+
+```text
+read  = flags(current org) ∩ tree(JWT org)
+write = tree(current org) ∩ tree(JWT org)
+```
+
+- No flag → **current organisation only**.
+- `mine`, `children`, `deep` widen reads downward.
+- `shared`, `catalog` go **upward** (ancestors / catalogue): never on private data
+  (→ **400**); allowed only on shareable resources, **read-only**, for rows explicitly
+  marked as shared (e.g. `catalog = true`).
+- A row that exists but is out of scope, accessed by id → **404** (no existence leak).
+- A payload attaching a resource to a foreign organisation → **403**.
+
+### Tokens
+
+- **User JWT**: always bounded as above.
+- **Module (M2M) token**: unrestricted by design. Never use a module token to serve an
+  end-user request. If a module backend must, it filters by organisation itself and
+  documents it in `docs/module.yaml` (`access`).
+
+### Callers (Play, module frontends, module backends)
+
+- Call `platform-api` (and any tenant-aware service) on behalf of a user with the **user
+  JWT** + `X-ORGANIZATION-ID` when the user switched organisation.
+- Do not pass `organisation_id` as a query/body parameter to "filter" — the server decides.
+- Ask for wider scopes explicitly with flags (`children=true`, `deep=true`) only where the
+  product needs it (e.g. Deepidoo admin views).
+- Expect fewer results / 404 when moving from unfiltered to filtered endpoints; do not
+  work around it with a module token.
+
+### Services owning tenant data
+
+- Apply the same semantics: header → current org, bounded by the JWT org tree, in the
+  repository/service layer — not only in route handlers or UI.
+- Include the tenant perimeter in every cache key of tenant-filtered responses.
+- Tests: allowed case + forbidden cases (foreign header 403, foreign id 404, foreign
+  payload 403, upward flag on private data 400) + module token behaviour.
+
+### Reference implementation
+
+`platform-api` — `app/core/deps.py` (`get_acting_organisation_id`),
+`app/core/tenant_scope.py`, `app/core/tenant_deps.py`, `app/repositories/tenant_clause.py`;
+repo rule `.cursor/rules/11-tenant-organisation.mdc`.

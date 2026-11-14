@@ -266,6 +266,8 @@ services:
       JWT_SECRET: ${JWT_SECRET:-change-me}
       JWT_ISSUER: ${JWT_ISSUER:-deepidoo-auth}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173,http://127.0.0.1:5173,http://localhost:5174,http://127.0.0.1:5174,http://localhost:5283,http://127.0.0.1:5283,http://auth-service.new-age.me,http://auth-admin.new-age.me,http://platform-api.new-age.me,http://deepiflow.new-age.me}
+      # Arbre d'organisations des routes /v1/org/* (org:admin)
+      PLATFORM_API_BASE_URL: ${PLATFORM_API_BASE_URL:-http://platform-api:8000}
       DEEPILOT_SERVICE_NAME: ${DEEPILOT_AUTH_SERVICE_NAME:-auth-service}
       DEEPILOT_ENVIRONMENT: ${DEEPILOT_ENVIRONMENT:-local}
       DEEPILOT_TEMPO_ENDPOINT: ${DEEPILOT_TEMPO_ENDPOINT:-http://tempo:4318}
@@ -524,9 +526,19 @@ services:
       REDIS_URL: ${REDIS_URL:-redis://redis:6379/14}
       AUTH_SKIP_JTI_CHECK: ${AUTH_SKIP_JTI_CHECK:-false}
       CORS_ORIGINS: ${DEEPIPUSH_CORS_ORIGINS:-http://deepipush.new-age.me}
+      PLATFORM_API_BASE_URL: http://platform-api:8000
+      AUTH_SERVICE_BASE_URL: http://auth-service:8000
+      OSS_ACCESS_KEY_ID: ${DEEPIPUSH_OSS_ACCESS_KEY_ID:-}
+      OSS_ACCESS_KEY_SECRET: ${DEEPIPUSH_OSS_ACCESS_KEY_SECRET:-}
       PYTHONPATH: /contracts/src
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.deepipush-api.rule=Host(`deepipush-api.${NEW_AGE_DOMAIN:-new-age.me}`)
+      - traefik.http.routers.deepipush-api.entrypoints=web
+      - traefik.http.services.deepipush-api.loadbalancer.server.port=8000
     volumes:
       - ../../deepipush/backend/app:/app/app
+      - ../../deepipush/backend/migrations:/app/migrations
       - ../../contracts:/contracts
     ports:
       - "${DEEPIPUSH_HOST_PORT:-8011}:8000"
@@ -555,6 +567,11 @@ services:
         RUN node -e 'const fs=require("fs"); const j=JSON.parse(fs.readFileSync("package.json","utf8")); j.dependencies["@deepidoo/deesplay"]="portal:/deesplay/packages/deesplay"; fs.writeFileSync("package.json", JSON.stringify(j,null,2)+"\n");'
         EXPOSE 5190
         CMD ["sh","-c","yarn install && yarn dev --host 0.0.0.0 --port 5190"]
+    environment:
+      VITE_AUTH_SERVICE_URL: http://auth-service.${NEW_AGE_DOMAIN:-new-age.me}
+      VITE_PLATFORM_API_URL: http://platform-api.${NEW_AGE_DOMAIN:-new-age.me}
+      VITE_MODULE_API_URL: http://deepipush-api.${NEW_AGE_DOMAIN:-new-age.me}
+      MODULE_API_PROXY: http://deepipush:8000
     volumes:
       - ../../deepipush/frontend-web/src:/app/src
       - ../../deepipush/frontend-web/public:/app/public
