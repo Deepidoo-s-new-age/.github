@@ -16,6 +16,7 @@ en local, le workspace New Age les charge via des symlinks dans `.cursor/rules/`
 | Identity and authorization ownership | [`rules/RULE-GLOBAL-IDENTITY-AUTHORIZATION.mdc`](rules/RULE-GLOBAL-IDENTITY-AUTHORIZATION.mdc) | Émission/validation JWT, scopes actuels, licences vs flags, moindre privilège | Intelligent/file-scoped | `**/*.{py,ts,tsx,vue,js,mjs,mts,csv,yaml,yml}` |
 | API contracts and data boundaries | [`rules/RULE-GLOBAL-API-DATA-BOUNDARIES.mdc`](rules/RULE-GLOBAL-API-DATA-BOUNDARIES.mdc) | `/v1`, couches, propriété des DTO, pagination, invalidation de cache, clients HTTP | Intelligent/file-scoped | `**/*.{py,ts,tsx,vue,js,mjs,mts}` |
 | Production frontend integration | [`rules/RULE-GLOBAL-FRONTEND-INTEGRATION.mdc`](rules/RULE-GLOBAL-FRONTEND-INTEGRATION.mdc) | `play → playdoo → deesplay` (dans `play`), fronts de modules, migration API | Intelligent/file-scoped | `**/*.{ts,tsx,vue,js,scss,css}` |
+| Tenant organisation (X-ORGANIZATION-ID) | [`rules/RULE-GLOBAL-TENANT-ORGANISATION.mdc`](rules/RULE-GLOBAL-TENANT-ORGANISATION.mdc) | Org du JWT (borne) vs org courante (header), flags de visibilité bornés, 404/403, tokens module, appelants | Intelligent/file-scoped | `**/*.{py,ts,tsx,vue,js,mjs,mts}` |
 | Security and delivery baseline | [`rules/RULE-GLOBAL-SECURITY-QUALITY.mdc`](rules/RULE-GLOBAL-SECURITY-QUALITY.mdc) | Secrets, isolation tenant, tests, qualité, statut honnête | Always | Tous |
 
 ## Règles par dépôt
@@ -25,6 +26,7 @@ en local, le workspace New Age les charge via des symlinks dans `.cursor/rules/`
 | `contracts` | deepidoo-contracts team contract | `.cursor/rules/10-team-contract.mdc` | Contrats partagés uniquement, nommage, semver, impact consommateurs | Always | Tout le dépôt |
 | `auth-service` | auth-service routes and permissions | `.cursor/rules/10-routes-permissions.mdc` | Routes possédées, source ACL, enregistrement des scopes, identité module | Conditionnelle | `backend/app/**/*.{py,csv}` |
 | `platform-api` | platform-api route and scope contract | `.cursor/rules/10-route-scope-contract.mdc` | Alignement route/scope CRUD, routes core custom, comportement auth | Conditionnelle | `app/api/**/*.py` |
+| `platform-api` | platform-api tenant / X-ORGANIZATION-ID | `.cursor/rules/11-tenant-organisation.mdc` | `TenantScope` obligatoire sur `CrudRouter`, visibilité bornée par l'arbre JWT, codes HTTP, cache, tests | Conditionnelle | `app/**/*.py`, `tests/**/*.py` |
 | `play` | New Age module integration in Play | `.cursor/rules/frontend/module-integration.mdc` | UI module production, routes, clients, migration `/api/v4` → `/v1` | Conditionnelle | `packages/playdoo/**/*.{ts,vue}` |
 | `play_music_ai` | Play Music AI module boundary | `.cursor/rules/module-boundary.mdc` | Objectif, front production, YAML purpose/actors/access/source, scopes | Always | Tout le dépôt |
 | `deesplay` | Deesplay repository boundary | `.cursor/rules/team-boundary.mdc` | Source de vérité standalone, isolation du design system | Always | Tout le dépôt |

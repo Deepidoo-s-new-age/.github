@@ -44,6 +44,7 @@ Dépôts : [deepidoo-contracts](https://github.com/Deepidoo-s-new-age/deepidoo-c
 | [Scheduler (job planning)](rules/RULE-GLOBAL-SCHEDULER.mdc) | Always | Dépôt `scheduler`, plannings Celery, workers modules |
 | [Identity and authorization](rules/RULE-GLOBAL-IDENTITY-AUTHORIZATION.mdc) | Intelligent/file-scoped | `**/*.{py,ts,tsx,vue,js,mjs,mts,csv,yaml,yml}` |
 | [API contracts and data boundaries](rules/RULE-GLOBAL-API-DATA-BOUNDARIES.mdc) | Intelligent/file-scoped | `**/*.{py,ts,tsx,vue,js,mjs,mts}` |
+| [Tenant organisation (X-ORGANIZATION-ID)](rules/RULE-GLOBAL-TENANT-ORGANISATION.mdc) | Intelligent/file-scoped | `**/*.{py,ts,tsx,vue,js,mjs,mts}` |
 | [Production frontend integration](rules/RULE-GLOBAL-FRONTEND-INTEGRATION.mdc) | Intelligent/file-scoped | `**/*.{ts,tsx,vue,js,scss,css}` |
 | [Security and delivery baseline](rules/RULE-GLOBAL-SECURITY-QUALITY.mdc) | Always | Tous les dépôts |
 
