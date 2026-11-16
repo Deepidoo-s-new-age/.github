@@ -57,6 +57,8 @@ Branch: `promote/auth-service`.
 
 ## `ci-workflows` pins (current on `main` services)
 
+Clone `https://github.com/Deepidoo-s-new-age/ci-workflows.git` beside the service repo when it is missing. Otherwise `git checkout main` and `git pull` before reading `README.md`, `examples/`, or a workflow file.
+
 | Component | Tag |
 |---|---|
 | `image.yml`, `vue-image.yml` | `ci-v1.0.21` |
@@ -75,6 +77,8 @@ Examples to copy before customization:
 ---
 
 ## `helm-charts` — auth-service touchpoints
+
+Clone `https://github.com/Deepidoo-s-new-age/helm-charts.git` beside the service repo when it is missing. Otherwise `git checkout main` and `git pull` before creating a chart, values file, helmfile release, or Argo app.
 
 | Path | Purpose |
 |---|---|

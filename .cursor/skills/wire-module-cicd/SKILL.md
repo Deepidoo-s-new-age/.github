@@ -46,6 +46,9 @@ Previews use **`ci-workflows` `preview.yml`** (pin **`ci-v1.0.14`**); promote re
 10. Helm values use an **image digest**. `image.yml` also pushes `:latest`; nothing in values may reference it.
 11. **One process per Deployment.** A Celery worker is not the API chart. Scheduler charts stay out of scope (RULE-GLOBAL-SCHEDULER).
 12. Do not add this image to `tools/sync_companion_digests.py` `PAIRS` unless other previews run it as a companion. A missing companion file makes every auth and platform promote fail.
+13. Read workflows and charts from a current `main` checkout, as a sibling of the service repo. Clone when the directory is missing; otherwise `git checkout main` and `git pull` before use. Stop if that checkout would discard uncommitted work.
+    - **`ci-workflows`** — `https://github.com/Deepidoo-s-new-age/ci-workflows.git`, before reading `README.md`, `examples/`, or a reusable workflow.
+    - **`helm-charts`** — `https://github.com/Deepidoo-s-new-age/helm-charts.git`, before creating or editing a chart, values file, helmfile release, or Argo app.
 
 ## Existing repository
 
@@ -137,7 +140,7 @@ In the directory that holds `pyproject.toml` + `uv.lock` (usually `backend/`):
 
 ## Phase 3 — GitHub Actions (`ci-workflows`)
 
-Create `.github/workflows/ci.yml`. Copy structure from **`auth-service/.github/workflows/ci.yml`** (profile A) or **`platform-api/.github/workflows/ci.yml`** (profile B).
+Clone `ci-workflows` when it is not next to the service repo. When the clone exists, `git checkout main` and `git pull` before reading workflows. Create `.github/workflows/ci.yml` from that checkout. Copy structure from **`auth-service/.github/workflows/ci.yml`** (profile A) or **`platform-api/.github/workflows/ci.yml`** (profile B).
 
 **Pin these tags** (update only when [ci-workflows/README](https://github.com/Deepidoo-s-new-age/ci-workflows/blob/main/README.md) says so):
 
@@ -208,7 +211,7 @@ Module **`frontend-web/`**: same job shape, `vue-image.yml` `@ci-v1.0.21`. Final
 
 ## Phase 7 — `helm-charts`
 
-Edit **`helm-charts`** in a **separate PR** (often opened by promote, but **first deploy** needs manual scaffolding):
+Clone `helm-charts` when it is not next to the service repo. When the clone exists, `git checkout main` and `git pull` before creating a chart or values file. Edit that checkout in a **separate PR** (often opened by promote, but **first deploy** needs manual scaffolding):
 
 1. **Values** — four files per API (+ frontend if any):
    - `environments/preproduction/<image>.values.yaml`
