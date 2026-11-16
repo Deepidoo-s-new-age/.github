@@ -6,19 +6,19 @@ Canonical implementations: **`auth-service`** (profile A), **`platform-api`** (p
 
 | Path | Purpose |
 |---|---|
-| `.github/workflows/ci.yml` | `python-service`, `architecture`, `security`, `vue-app`, `image`, custom `frontend-image`, `promote` |
+| `.github/workflows/ci.yml` | `python-service`, `architecture`, `security`, `vue-app`, `image`, `vue-image` (`clone_deesplay`, `mount_secret: false`), `promote` |
 | `.github/workflows/preview.yml` | Thin caller → `ci-workflows` `preview.yml` (`ci-v1.0.14`); PR label `preview` → GHCR `:sha` |
 | `backend/pyproject.toml` | `deepilot`, contracts git pin, ruff, import-linter |
 | `backend/uv.lock` | Frozen deps |
 | `backend/coverage-baseline.txt` | Coverage ratchet floor |
 | `backend/app/main.py` | `install()`, lifespan instrumentation order |
-| `backend/Dockerfile` | Prod image, `uv sync --no-dev`, BuildKit `github_token` |
+| `backend/Dockerfile` | `python:3.12.16-slim-trixie`, `apt-get upgrade`, `uv sync --no-dev`, uninstall `uv`, BuildKit `github_token` |
 | `backend/.env.example` | `DEEPILOT_*`, DB, Redis |
 | `docs/module.yaml` | Architecture validator input (foundations: baseline-heavy) |
 | `docs/openapi.json` | Committed OpenAPI |
 | `docs/architecture-baseline.txt` | Waived routes until YAML complete |
-| `frontend/Dockerfile` | nginx SPA + proxy `/v1` |
-| `frontend/.npmrc` | GH Packages for deesplay |
+| `frontend/Dockerfile` | `nginx:1.30.6-alpine3.24` + `apk upgrade`; SPA + proxy `/v1` |
+| `frontend/.npmrc` | `legacy-peer-deps` for the `file:` deesplay dependency; no npm token in the image |
 | `CODEOWNERS` | Review ownership |
 | `renovate.json` | Dependency bot scope |
 
@@ -49,7 +49,7 @@ Branch: `promote/auth-service`.
 |---|---|
 | `.github/workflows/ci.yml` | No `web` / `frontend-image`; `working_directory: .`; single promote |
 | `app/main.py` | Same deepilot pattern |
-| `Dockerfile` | Context repo root |
+| `Dockerfile` | Context repo root; same Python base and `uv` uninstall as auth-service |
 | Promote file | `environments/preproduction/platform-api-backend.values.yaml` |
 | Branch | `promote/platform-api-backend` |
 
@@ -59,7 +59,10 @@ Branch: `promote/auth-service`.
 
 | Component | Tag |
 |---|---|
-| Every reusable workflow | `ci-v1.0.14` |
+| `image.yml`, `vue-image.yml` | `ci-v1.0.21` |
+| Every other reusable workflow | `ci-v1.0.14` |
+
+`ci-v1.0.21` runs Trivy (fixed HIGH/CRITICAL only), syft, and cosign inside the image job. Callers grant `id-token: write` on that job. Do not pin `ci-v1.0.15`–`ci-v1.0.20` on new image jobs: those tags either resolve the composite action in the caller repository or download syft/Trivy releases that 404.
 
 Examples to copy before customization:
 
@@ -67,7 +70,7 @@ Examples to copy before customization:
 - `ci-workflows/examples/architecture.yml`
 - `ci-workflows/examples/security.yml`
 - `ci-workflows/examples/vue-app.yml`
-- `ci-workflows/examples/image.yml`
+- `ci-workflows/examples/vue-service.yml`
 
 ---
 
@@ -161,12 +164,13 @@ If the module is **`design_mode: frontend_only`**, stop before phases 1–4 (bac
 
 ```markdown
 ### CI/CD wiring
-- [ ] every `uses:` pins `ci-v1.0.14`
+- [ ] image `uses:` pins `ci-v1.0.21`; every other `uses:` pins `ci-v1.0.14`
+- [ ] image jobs grant `id-token: write`; Dockerfile upgrades OS packages and does not leave `uv` installed
 - [ ] `design_mode` is not `frontend_only`
 - [ ] deepilot git tag `v0.1.7` (or newer) + install() in main
 - [ ] `deepidoo-contracts` git tag matches `auth-service` (`v0.2.0` on 16 Nov 2026)
 - [ ] job ids `backend-image` / `frontend-image`; Dockerfile path matches `image.yml`
-- [ ] frontend secret id matches the Dockerfile (`npm_token`, `github_token`, or none)
+- [ ] frontend: `clone_deesplay` when the Dockerfile uses `file:` deesplay; `mount_secret` matches the Dockerfile (`npm_token`, `github_token`, or false)
 - [ ] values use digests, never `:latest`
 - [ ] companion `PAIRS` updated only when other previews run this image
 - [ ] coverage-baseline.txt

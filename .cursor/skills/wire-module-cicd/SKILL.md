@@ -35,7 +35,7 @@ Previews use **`ci-workflows` `preview.yml`** (pin **`ci-v1.0.14`**); promote re
 ## Hard rules
 
 1. Organization **`Deepidoo-s-new-age`** only — reusable workflows refuse other owners.
-2. Pin **`ci-v1.0.14`** on every `uses:` line — never `@main`, and never an older `ci-v1.0.*` tag copied from history. The tag is created on `ci-workflows` `main` with **Actions → Tag ci release** after that commit merges. A caller that names the tag fails until the tag exists.
+2. Pin the tag from the table in phase 3 — never `@main`, and never an older `ci-v1.0.*` tag copied from history. Image jobs are **`ci-v1.0.21`**; every other reusable workflow stays **`ci-v1.0.14`**. The tag is created on `ci-workflows` `main` with **Actions → Tag ci release** after that commit merges. A caller that names the tag fails until the tag exists.
 3. **`deepilot`** git tag **`v0.1.7`** (or newer) in `[project].dependencies`, not dev-only. `0.1.6` crashes when `httpx` is absent. CI runs `python -m deepilot.probe`.
 4. **`deepidoo-contracts`** git tag is the tag on `auth-service` `main` today (`v0.2.0`). Do not copy `v0.1.0` from old progress notes.
 5. **`docs/module.yaml`** filled for business modules; architecture job compares routes. If `design_mode: frontend_only`, stop. Do not add backend, images, or Helm until the user clears that flag.
@@ -54,7 +54,7 @@ Do this before phase 1 when the repo already has code and is not on this plan:
 1. Read `docs/module.yaml`. `design_mode: frontend_only` stops the rest of this skill.
 2. Inventory and remove, in the same change, the old pipeline: extra workflows, a second image publisher, a repo `docker-compose.yml`, and in-repo Helm. Deploys stay in `helm-charts`.
 3. Match the tree to the workflows. `image.yml` builds `<context>/Dockerfile` unless `dockerfile` is set, and that path must end with `Dockerfile`. UI is `frontend` or `frontend-web`: set `vue-app` `working_directory`, the image `context`, and preview `frontend_context` to that directory.
-4. BuildKit secret id must match the Dockerfile. `vue-image.yml` input `secret_id` defaults to `github_token`. Preview `frontend_secret_id` defaults to `npm_token`. `auth-service` frontend uses a `file:` dependency on deesplay and mounts no secret; preview `clone_deesplay` stays true. A UI that does not use deesplay sets `clone_deesplay: false`. Do not point a `file:` deesplay Dockerfile at `vue-image.yml` (that workflow does not clone deesplay).
+4. BuildKit secret id must match the Dockerfile. `vue-image.yml` `secret_id` defaults to `github_token` and `mount_secret` defaults to true. Set `mount_secret: false` when the Dockerfile mounts no secret. A `file:` dependency on deesplay sets `clone_deesplay: true` on **both** `vue-image.yml` and preview (`auth-service` does this and mounts no secret). A UI that does not use deesplay leaves `clone_deesplay` false. Do not copy the Trivy, syft, or cosign steps into the caller.
 5. Bootstrap gates from the current tree, in order. Measure coverage and commit `coverage-baseline.txt` before `coverage_source`. Put every existing route in `docs/module.yaml` or `docs/architecture-baseline.txt` before the architecture job is required. Commit `docs/openapi.json` from the generator the architecture workflow runs. Fix `pip-audit` and Semgrep by bumping dependencies. Do not disable the security job. Add import-linter only when the boundaries already pass.
 6. Wire runtime env the charts need: in-cluster URLs for auth-service and platform-api, JWT via `deepidoo-contracts`, the module Postgres schema, the Redis DB index, and `DEEPILOT_*`. `GET /health` must answer without a database. An empty digest must skip the release (same pattern as the frontend chart) so the first Argo sync is not a crash.
 7. Copy migrate and seed blocks only when the image contains those commands.
@@ -116,7 +116,7 @@ In the directory that holds `pyproject.toml` + `uv.lock` (usually `backend/`):
 - **`coverage-baseline.txt`** — one decimal floored % from a local run; commit it **before** setting `coverage_source`, or the first CI run fails the ratchet.
 - **`.env.example`** with inert URLs and `DEEPILOT_*` variables documented.
 
-**Dockerfile** (prod): match `auth-service/backend/Dockerfile` — `python:3.12.15-slim-trixie`, `uv==0.12.23`, `uv sync --frozen --no-dev`, BuildKit secret `github_token`, `CMD` via `.venv/bin/uvicorn` (no `uv run` in image).
+**Dockerfile** (prod): match `auth-service/backend/Dockerfile` — `python:3.12.16-slim-trixie`, `apt-get upgrade` before installing git, `uv==0.12.23` only for `uv sync --frozen --no-dev`, then `pip uninstall -y uv`. BuildKit secret `github_token`. `CMD` via `.venv/bin/uvicorn` (no `uv run` in the image). Leave `uv` installed and Trivy fails the image job: 0.12.23 has a fixed critical advisory (`GHSA-hq85-5cpj-mr62`).
 
 ---
 
@@ -147,8 +147,8 @@ Create `.github/workflows/ci.yml`. Copy structure from **`auth-service/.github/w
 | `architecture` | `architecture.yml` | `ci-v1.0.14` |
 | `security` | `security.yml` | `ci-v1.0.14` |
 | `web` (Vue) | `vue-app.yml` | `ci-v1.0.14` |
-| `backend-image` | `image.yml` | `ci-v1.0.14` |
-| `frontend-image` | `vue-image.yml` or a custom job | `ci-v1.0.14` |
+| `backend-image` | `image.yml` | `ci-v1.0.21` |
+| `frontend-image` | `vue-image.yml` | `ci-v1.0.21` |
 | `preview` | `preview.yml` | `ci-v1.0.14` |
 | library test | `python-package.yml` | `ci-v1.0.14` |
 | library release | `python-release.yml` | `ci-v1.0.14` |
@@ -161,7 +161,7 @@ Create `.github/workflows/ci.yml`. Copy structure from **`auth-service/.github/w
 - `coverage_source: app` when ratchet is ready
 - `telemetry_app`: `app.main:app` if layout differs
 
-Grant job permissions: `test` → `actions: write`; image jobs → `packages: write`; `web` → `packages: read`.
+Grant job permissions: `test` → `actions: write`; image jobs → `contents: read`, `packages: write`, and `id-token: write` (cosign on `main`); `web` → `packages: read`. GitHub keeps the intersection of the caller permissions and the called workflow. Missing `id-token: write` makes the sign step fail after a successful push.
 
 **Promote job:** copy from reference; set branch `promote/<service>`, values paths, and `HELM_CHARTS_TOKEN` script. Profile A updates **two** digest files; B updates one.
 
@@ -172,9 +172,11 @@ Libraries without FastAPI use **`python-package.yml`** — no deepilot probe.
 ## Phase 4 — Docker / GHCR
 
 - Image name = workflow `image_name` (e.g. `auth-service-backend`).
-- `push: true` only on `push` to `main`; PRs build without push.
+- `push: true` only on `push` to `main`; PRs build without push (`load: true` inside the reusable workflow).
 - `backend-image` `needs: [test, architecture, security]` (+ `web` if present).
-- Frontend image (profile A): often a **custom job** in `ci.yml` (clone `deesplay`, npm secret) — see `auth-service` `frontend-image` job; not yet a single reusable workflow for all modules.
+- Frontend image (profile A): `vue-image.yml`, not a custom job. `auth-service` sets `context: frontend`, `clone_deesplay: true`, `mount_secret: false`. A UI that installs from GitHub Packages keeps `mount_secret: true` and sets `secret_id` to the id the Dockerfile mounts (`github_token` or `npm_token`).
+- `ci-v1.0.21` runs Trivy, syft, and cosign after the build. Trivy fails HIGH/CRITICAL findings that have a vendor fix (`--ignore-unfixed`). Upgrade OS packages in the Dockerfile (`apt-get upgrade` or `apk upgrade`) so fixed packages are not left in the base layer. A repository-root `.trivyignore` replaces the action default. syft writes a CycloneDX SBOM and does not fail the job. cosign signs the digest only when `push` is true.
+- Do not vendor the supply-chain script or call `.github/actions/supply-chain-image` from the service repo. A relative action path resolves in the caller, which has no such action.
 
 Package visibility: org GHCR; cluster needs `ghcr` pull secret (already on shared cluster).
 
@@ -200,7 +202,7 @@ Import-linter: add contracts to `pyproject.toml` when enforcing handler boundari
 - `run_build: false` until clean production build in CI.
 - **dependency-cruiser** in web job when `auth-service` pattern is required.
 
-Module **`frontend-web/`**: same job shape. `vue-image.yml` (`secret_id`, default `github_token`) builds a Dockerfile that does not need a deesplay `file:` context. `auth-service` keeps a custom `frontend-image` job because it clones deesplay and passes build context `deesplay`. That job must run on pull requests with `push: false` and `load: true`, and push only on `main`. Do not push `:latest` from the custom job.
+Module **`frontend-web/`**: same job shape, `vue-image.yml` `@ci-v1.0.21`. Final nginx image: match `auth-service/frontend/Dockerfile` — `nginx:1.30.6-alpine3.24` and `apk upgrade --no-cache`. `nginx:1.27-alpine` fails Trivy on fixed Alpine 3.21 findings. `push: false` on pull requests and `push` only on `main` are inputs of `vue-image.yml`; do not add a second publisher that pushes `:latest`.
 
 ---
 
@@ -306,6 +308,6 @@ Report **tag pins**, **open PR URLs**, and **debt** (rulesets on Free plan, miss
 ## Out of scope unless asked
 
 - GitHub rulesets / branch protection (org plan limits)
-- SOPS / External Secrets (phase 9 supply chain)
+- SOPS / External Secrets (image Trivy, syft, and cosign are in `image.yml` / `vue-image.yml` `@ci-v1.0.21`, not here)
 - `scheduler` Celery worker charts (see RULE-GLOBAL-SCHEDULER)
 - Scopes in `auth-service` / Play integration
