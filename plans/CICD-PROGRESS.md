@@ -20,8 +20,8 @@ How a change reaches preproduction and production is [helm-charts/docs/deploying
 | 5 — Architecture and security gates | Finish line met on the cloned repositories. The nightly preproduction smoke is still absent |
 | 6 — `helm-charts` and promotion | Concluded. Argo CD `v3.5.6` applies `main`. Digests on `helm-charts` `a0e3ac1` are in [Phase 6](#phase-6--charts-and-promotion). The 26 October table below that heading is history. Production moves only when **Promote to production** runs |
 | 7 — Preview environments | **Concluded.** Full-stack shape on `helm-charts` `main` since [#98](https://github.com/Deepidoo-s-new-age/helm-charts/pull/98). Companion digests sync on promote ([#100](https://github.com/Deepidoo-s-new-age/helm-charts/pull/100), auth [#45](https://github.com/Deepidoo-s-new-age/auth-service/pull/45), platform [#84](https://github.com/Deepidoo-s-new-age/platform-api/pull/84)). Shared `preview.yml` is tag `ci-v1.0.13` on `ci-workflows` `main` (`f8cc9a5`). `auth-service` and `platform-api` callers on `main` are thin `workflow_call`s at that tag. |
-| 8 — Telemetry and uptime | **Open.** Shipped: `deepilot` `v0.1.2`–`v0.1.7` (both services pin `v0.1.7`), `DEEPILOT_*` in Helm values, Ingress `/health` probes, Grafana Service / Errors / Uptime dashboards, and the workload metrics dashboard. Finish line not verified here: one trace across services, and those dashboards reflecting real preproduction traffic. |
-| 9 — Supply chain | Not started |
+| 8 — Telemetry and uptime | **Concluded** (finish line verified in preproduction, 16 November 2026). |
+| 9 — Supply chain | **In progress.** `image.yml` / `vue-image.yml`: Trivy, syft, cosign (`ci-v1.0.15`). Kyverno installed via Argo (`policies/kyverno/`, **Audit**). **Enforce** and org-wide caller pins after soak. Renovate, Action SHA pins, SOPS/ESO, GHCR retention still open. |
 | 10 — SonarQube | Not started |
 | 11 — Agent loop | Not started |
 
