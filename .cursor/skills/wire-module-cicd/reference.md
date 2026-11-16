@@ -7,7 +7,7 @@ Canonical implementations: **`auth-service`** (profile A), **`platform-api`** (p
 | Path | Purpose |
 |---|---|
 | `.github/workflows/ci.yml` | `python-service`, `architecture`, `security`, `vue-app`, `image`, custom `frontend-image`, `promote` |
-| `.github/workflows/preview.yml` | Thin caller → `ci-workflows` `preview.yml` (`ci-v1.0.13+`); PR label `preview` → GHCR `:sha` |
+| `.github/workflows/preview.yml` | Thin caller → `ci-workflows` `preview.yml` (`ci-v1.0.14`); PR label `preview` → GHCR `:sha` |
 | `backend/pyproject.toml` | `deepilot`, contracts git pin, ruff, import-linter |
 | `backend/uv.lock` | Frozen deps |
 | `backend/coverage-baseline.txt` | Coverage ratchet floor |
@@ -59,11 +59,7 @@ Branch: `promote/auth-service`.
 
 | Component | Tag |
 |---|---|
-| `python-service.yml` | `ci-v1.0.10` |
-| `architecture.yml` | `ci-v1.0.9` |
-| `security.yml` | `ci-v1.0.6` |
-| `vue-app.yml` | `ci-v1.0.5` |
-| `image.yml` | `ci-v1.0.12` |
+| Every reusable workflow | `ci-v1.0.14` |
 
 Examples to copy before customization:
 
@@ -165,8 +161,14 @@ If the module is **`design_mode: frontend_only`**, stop before phases 1–4 (bac
 
 ```markdown
 ### CI/CD wiring
-- [ ] ci.yml pins ci-v1.0.10 / v1.0.9 / v1.0.6 / v1.0.12
-- [ ] deepilot in dependencies + install() in main
+- [ ] every `uses:` pins `ci-v1.0.14`
+- [ ] `design_mode` is not `frontend_only`
+- [ ] deepilot git tag `v0.1.7` (or newer) + install() in main
+- [ ] `deepidoo-contracts` git tag matches `auth-service` (`v0.2.0` on 16 Nov 2026)
+- [ ] job ids `backend-image` / `frontend-image`; Dockerfile path matches `image.yml`
+- [ ] frontend secret id matches the Dockerfile (`npm_token`, `github_token`, or none)
+- [ ] values use digests, never `:latest`
+- [ ] companion `PAIRS` updated only when other previews run this image
 - [ ] coverage-baseline.txt
 - [ ] docs/module.yaml + openapi.json + architecture-baseline.txt
 - [ ] Dockerfile prod + SCHEMAS_READ_TOKEN documented

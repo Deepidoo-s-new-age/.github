@@ -30,17 +30,35 @@ the repo is empty.
 | **B — API only** | `platform-api` | Single FastAPI tree (`backend/` or repo root), one image, single promote |
 | **C — Business module** | A or B + `docs/module.yaml` | Same CI as A/B; Helm names follow `<module-id>-backend` / optional `frontend-web` |
 
-Previews use **`ci-workflows` `preview.yml`** (pin `ci-v1.0.13+`); promote remains **per repo** (helm-charts digest PRs). Copy `ci-workflows/examples/preview-service.yml` or `auth-service` / `platform-api` callers.
+Previews use **`ci-workflows` `preview.yml`** (pin **`ci-v1.0.14`**); promote remains **per repo** (helm-charts digest PRs). Copy `ci-workflows/examples/preview-service.yml` or `auth-service` / `platform-api` callers.
 
 ## Hard rules
 
 1. Organization **`Deepidoo-s-new-age`** only — reusable workflows refuse other owners.
-2. Pin **`ci-workflows`** tags in callers — never `@main` in production callers.
-3. **`deepilot`** in `[project].dependencies` (not dev-only). CI runs `python -m deepilot.probe`.
-4. **`docs/module.yaml`** filled for business modules; architecture job compares routes.
-5. **No secrets in git** — inert placeholders in values; real JWT via `runtime-env` in prod.
-6. **Deployments only in `helm-charts`** — service repos push images + open digest PRs, never `kubectl`.
-7. Ask the user before creating **GitHub repository secrets** or org settings (tokens).
+2. Pin **`ci-v1.0.14`** on every `uses:` line — never `@main`, and never an older `ci-v1.0.*` tag copied from history. The tag is created on `ci-workflows` `main` with **Actions → Tag ci release** after that commit merges. A caller that names the tag fails until the tag exists.
+3. **`deepilot`** git tag **`v0.1.7`** (or newer) in `[project].dependencies`, not dev-only. `0.1.6` crashes when `httpx` is absent. CI runs `python -m deepilot.probe`.
+4. **`deepidoo-contracts`** git tag is the tag on `auth-service` `main` today (`v0.2.0`). Do not copy `v0.1.0` from old progress notes.
+5. **`docs/module.yaml`** filled for business modules; architecture job compares routes. If `design_mode: frontend_only`, stop. Do not add backend, images, or Helm until the user clears that flag.
+6. **No secrets in git** — inert placeholders in values; real JWT via `runtime-env` in prod.
+7. **Deployments only in `helm-charts`** — service repos push images + open digest PRs, never `kubectl`. Delete a repo-local `docker-compose.yml` and any Helm chart inside the module repo once `.github/local` and `helm-charts` own them.
+8. Ask the user before creating **GitHub repository secrets** or org settings (tokens). Link the GHCR package to the repository so `packages: write` can push.
+9. Caller job ids are **`backend-image`** and **`frontend-image`**. Promote reads `needs.<job>.outputs.digest`.
+10. Helm values use an **image digest**. `image.yml` also pushes `:latest`; nothing in values may reference it.
+11. **One process per Deployment.** A Celery worker is not the API chart. Scheduler charts stay out of scope (RULE-GLOBAL-SCHEDULER).
+12. Do not add this image to `tools/sync_companion_digests.py` `PAIRS` unless other previews run it as a companion. A missing companion file makes every auth and platform promote fail.
+
+## Existing repository
+
+Do this before phase 1 when the repo already has code and is not on this plan:
+
+1. Read `docs/module.yaml`. `design_mode: frontend_only` stops the rest of this skill.
+2. Inventory and remove, in the same change, the old pipeline: extra workflows, a second image publisher, a repo `docker-compose.yml`, and in-repo Helm. Deploys stay in `helm-charts`.
+3. Match the tree to the workflows. `image.yml` builds `<context>/Dockerfile` unless `dockerfile` is set, and that path must end with `Dockerfile`. UI is `frontend` or `frontend-web`: set `vue-app` `working_directory`, the image `context`, and preview `frontend_context` to that directory.
+4. BuildKit secret id must match the Dockerfile. `vue-image.yml` input `secret_id` defaults to `github_token`. Preview `frontend_secret_id` defaults to `npm_token`. `auth-service` frontend uses a `file:` dependency on deesplay and mounts no secret; preview `clone_deesplay` stays true. A UI that does not use deesplay sets `clone_deesplay: false`. Do not point a `file:` deesplay Dockerfile at `vue-image.yml` (that workflow does not clone deesplay).
+5. Bootstrap gates from the current tree, in order. Measure coverage and commit `coverage-baseline.txt` before `coverage_source`. Put every existing route in `docs/module.yaml` or `docs/architecture-baseline.txt` before the architecture job is required. Commit `docs/openapi.json` from the generator the architecture workflow runs. Fix `pip-audit` and Semgrep by bumping dependencies. Do not disable the security job. Add import-linter only when the boundaries already pass.
+6. Wire runtime env the charts need: in-cluster URLs for auth-service and platform-api, JWT via `deepidoo-contracts`, the module Postgres schema, the Redis DB index, and `DEEPILOT_*`. `GET /health` must answer without a database. An empty digest must skip the release (same pattern as the frontend chart) so the first Argo sync is not a crash.
+7. Copy migrate and seed blocks only when the image contains those commands.
+8. A new preview needs the repo in `PREVIEW_REPOS`, the sweeper ConfigMap (re-embed `tools/preview_sweeper.py`), an ApplicationSet, and a quota check. Foundations at companion digests; this service at `head_sha`.
 
 ## Workflow
 
@@ -93,9 +111,9 @@ Confirm `GITHUB_TOKEN` can read sibling private repos if `SCHEMAS_READ_TOKEN` is
 In the directory that holds `pyproject.toml` + `uv.lock` (usually `backend/`):
 
 - Python **3.12**, **uv** `0.12.23`, `uv sync --frozen --all-groups` locally.
-- **`deepidoo-contracts`** pinned via **git tag** in `pyproject.toml` / lock (not editable path in prod image).
+- **`deepidoo-contracts`** pinned via the **git tag `auth-service` uses** (`v0.2.0` on 16 Nov 2026) in `pyproject.toml` / lock (not an editable path in the prod image).
 - **Ruff** + **pytest**; optional **`[tool.importlinter]`** (see `auth-service` `pyproject.toml`).
-- **`coverage-baseline.txt`** — one decimal floored %; commit next to `pyproject.toml` when using `coverage_source` in CI.
+- **`coverage-baseline.txt`** — one decimal floored % from a local run; commit it **before** setting `coverage_source`, or the first CI run fails the ratchet.
 - **`.env.example`** with inert URLs and `DEEPILOT_*` variables documented.
 
 **Dockerfile** (prod): match `auth-service/backend/Dockerfile` — `python:3.12.15-slim-trixie`, `uv==0.12.23`, `uv sync --frozen --no-dev`, BuildKit secret `github_token`, `CMD` via `.venv/bin/uvicorn` (no `uv run` in image).
@@ -104,7 +122,7 @@ In the directory that holds `pyproject.toml` + `uv.lock` (usually `backend/`):
 
 ## Phase 2 — deepilot + `/health`
 
-1. Add `deepilot>=0.1.6` (or current tag) to **dependencies**; git source in `[tool.uv.sources]` if org convention requires it.
+1. Add `deepilot` at git tag **`v0.1.7`** (or the newer tag `auth-service` pins) to **dependencies** and `[tool.uv.sources]`.
 2. In `app/main.py` (pattern from `auth-service`):
 
    - `from deepilot import TelemetrySettings, install, settings_from_env, …`
@@ -125,11 +143,16 @@ Create `.github/workflows/ci.yml`. Copy structure from **`auth-service/.github/w
 
 | Job | Workflow | Tag |
 |---|---|---|
-| `test` | `python-service.yml` | `ci-v1.0.10` |
-| `architecture` | `architecture.yml` | `ci-v1.0.9` |
-| `security` | `security.yml` | `ci-v1.0.6` |
-| `web` (Vue) | `vue-app.yml` | `ci-v1.0.5` |
-| `backend-image` | `image.yml` | `ci-v1.0.12` |
+| `test` | `python-service.yml` | `ci-v1.0.14` |
+| `architecture` | `architecture.yml` | `ci-v1.0.14` |
+| `security` | `security.yml` | `ci-v1.0.14` |
+| `web` (Vue) | `vue-app.yml` | `ci-v1.0.14` |
+| `backend-image` | `image.yml` | `ci-v1.0.14` |
+| `frontend-image` | `vue-image.yml` or a custom job | `ci-v1.0.14` |
+| `preview` | `preview.yml` | `ci-v1.0.14` |
+| library test | `python-package.yml` | `ci-v1.0.14` |
+| library release | `python-release.yml` | `ci-v1.0.14` |
+| npm release | `js-package.yml` | `ci-v1.0.14` |
 
 **Caller inputs** (adjust per repo):
 
@@ -172,12 +195,12 @@ Import-linter: add contracts to `pyproject.toml` when enforcing handler boundari
 
 ## Phase 6 — Optional Vue CI (profile A / module UI)
 
-- `vue-app.yml` with `working_directory: frontend` or `frontend-web`.
+- `vue-app.yml` with `working_directory: frontend` or `frontend-web` (the directory that contains `package.json`).
 - `frontend/.npmrc`: scope registry, `legacy-peer-deps` if needed, `packages_read_token` secret.
 - `run_build: false` until clean production build in CI.
 - **dependency-cruiser** in web job when `auth-service` pattern is required.
 
-Module **`frontend-web/`** (Deesplay): same job shape; image build may follow `vue-image.yml` when a reusable path exists — until then document deviation.
+Module **`frontend-web/`**: same job shape. `vue-image.yml` (`secret_id`, default `github_token`) builds a Dockerfile that does not need a deesplay `file:` context. `auth-service` keeps a custom `frontend-image` job because it clones deesplay and passes build context `deesplay`. That job must run on pull requests with `push: false` and `load: true`, and push only on `main`. Do not push `:latest` from the custom job.
 
 ---
 
@@ -228,7 +251,7 @@ Run `helm-charts` CI locally if possible: helmfile render / kubeconform per repo
 
 Only if the module needs PR namespaces:
 
-1. **`preview.yml`** — copy `ci-workflows/examples/preview-service.yml`, set `service_id`, image names, and optional `build_frontend`; pin `@ci-v1.0.13` after the tag exists.
+1. **`preview.yml`** — copy `ci-workflows/examples/preview-service.yml`, set `service_id`, image names, `frontend_context` (`frontend` or `frontend-web`), `clone_deesplay`, and optional `build_frontend`; pin `@ci-v1.0.14`. API-only callers leave `build_frontend` false. **Run workflow** must still add the `preview` label (`label` uses `!cancelled()` so a skipped frontend job does not skip it).
 2. **`argocd/apps/preview-applicationsets.yaml`** — new ApplicationSet (copy `preview-auth-service` block). Each preview namespace is a **preproduction lookalike**: Postgres, Redis, existing foundations at **companion** digests, PR service at **`head_sha`**, migrate+seed, in-cluster service URLs.
 3. **`environments/preview/companion-*.values.yaml`** — preproduction digest; promote runs `sync_companion_digests.py` in the service promote job.
 4. **`charts/preview-namespace/values.yaml`** / **`preview-sweeper`** — add repo name to allowed set; raise quota if the stack grows.
@@ -260,7 +283,8 @@ Run **`add-compose-service`** to add API/UI to `.github/local/docker-compose.yml
 
 | Check | How |
 |---|---|
-| CI green on PR | All reusable jobs pass, including Telemetry |
+| CI green on PR | All reusable jobs pass, including Telemetry. Every image `main` publishes was built on the PR (`push: false`) |
+| Preview label | API-only **Run workflow** adds the `preview` label |
 | Image on `main` | GHCR tag = git sha |
 | Promote PR | Opened in `helm-charts` with digest |
 | Argo sync | Application Healthy after merge |
