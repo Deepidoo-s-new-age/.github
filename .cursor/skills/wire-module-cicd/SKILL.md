@@ -41,7 +41,7 @@ Previews use **`ci-workflows` `preview.yml`** (pin **`ci-v1.0.14`**); promote re
 5. **`docs/module.yaml`** filled for business modules; architecture job compares routes. If `design_mode: frontend_only`, stop. Do not add backend, images, or Helm until the user clears that flag.
 6. **No secrets in git** — inert placeholders in values; real JWT via `runtime-env` in prod.
 7. **Deployments only in `helm-charts`** — service repos push images + open digest PRs, never `kubectl`. Delete a repo-local `docker-compose.yml` and any Helm chart inside the module repo once `.github/local` and `helm-charts` own them.
-8. Ask the user before creating **GitHub repository secrets** or org settings (tokens). Link the GHCR package to the repository so `packages: write` can push.
+8. Ask the user to create both module repository secrets in phase 0 (`SCHEMAS_READ_TOKEN`, `HELM_CHARTS_TOKEN`). Do not create the tokens, and do not put token values in git. Link the GHCR package to the repository so `packages: write` can push.
 9. Caller job ids are **`backend-image`** and **`frontend-image`**. Promote reads `needs.<job>.outputs.digest`.
 10. Helm values use an **image digest**. `image.yml` also pushes `:latest`; nothing in values may reference it.
 11. **One process per Deployment.** A Celery worker is not the API chart. Scheduler charts stay out of scope (RULE-GLOBAL-SCHEDULER).
@@ -98,14 +98,14 @@ Collect and fix in the synthesis before editing:
 | Ingress host slug | `auth-service` | sslip.io pattern in values |
 | DB schema | `auth` | Postgres + migrate job |
 
-**Repository secrets** (create in GitHub → Settings → Secrets):
+**Ask the user to create both Actions secrets** on the module repository (Settings → Secrets and variables → Actions → Repository secrets). Do this before editing workflows. Do not create the tokens, do not accept a pasted token value, and do not continue past this phase until the user confirms both secrets exist or says they will create them before the first CI run.
 
-| Secret | Used by |
-|---|---|
-| `SCHEMAS_READ_TOKEN` | Clone `deepidoo-contracts`, `deesplay`; BuildKit `github_token`; npm auth for frontend image |
-| `HELM_CHARTS_TOKEN` | Promote job — PAT with **only** `helm-charts` Contents + Pull requests (read/write) |
+| Secret | Token | Permissions | Used by |
+|---|---|---|---|
+| `SCHEMAS_READ_TOKEN` | **Classic** PAT. A fine-grained token cannot read GitHub Packages. | `repo` and `read:packages`. No `write:packages`. `repo` is required to clone private git dependencies and is broader than those repos. | `contracts_read_token` and `packages_read_token`: clone `deepidoo-contracts`, `deepilot`, `.github`, and `deesplay`; BuildKit `github_token`; npm install of `@deepidoo-s-new-age/*`. `GITHUB_TOKEN` cannot replace it (`read_package` is denied). |
+| `HELM_CHARTS_TOKEN` | **Fine-grained** PAT. Resource owner `Deepidoo-s-new-age`. Repository access: **only** `helm-charts`. | Contents read and write. Pull requests read and write. | Promote job only. The image still publishes when this secret is empty; the digest PR does not. |
 
-Confirm `GITHUB_TOKEN` can read sibling private repos if `SCHEMAS_READ_TOKEN` is unset in CI.
+The same token value may be stored on each module repository. One missing secret fails the jobs in that row only.
 
 ---
 
