@@ -77,17 +77,18 @@ Traefik écoute sur le **port 80** et route selon le `Host` :
 | http://deepiads.new-age.me | deepiads |
 | http://deepikiosk.new-age.me | deepikiosk |
 | http://deepiflow.new-age.me | deepiflow |
+| http://deepilive.new-age.me | deepilive |
 | http://traefik.new-age.me | dashboard Traefik (aussi `:8080`) |
 
-`deepi_live` n’a pas d’entrée. `deepi_monitor` reste sur `monitor.new-age.me`.
+`deepi_live` est servi sur `deepilive.new-age.me` (le hostname n’a pas d’underscore). `deepi_monitor` reste sur `monitor.new-age.me`.
 
 Les six noms sont routés par Traefik une fois les profiles lancés (avec `infra`, sinon Traefik ne tourne pas) :
 
 ```bash
-make up PROFILES="infra messaging scheduler deepipush deepivoice deepiads deepikiosk deepiflow"
+make up PROFILES="infra messaging scheduler deepipush deepivoice deepiads deepikiosk deepiflow deepilive"
 ```
 
-`scheduler` ouvre `/docs`. `deepipush` sert le front Relais. `deepivoice` sert la landing, l’app est sur `/app/`. `deepiflow` sert le front Vite, l’API est proxifiée sur `/api`.
+`scheduler` ouvre `/docs`. `deepipush` sert le front Relais. `deepivoice` sert la landing, l’app est sur `/app/`. `deepiflow` sert le front Vite, l’API est proxifiée sur `/api`. `deepilive` sert le front Vite sur `/`, l’API sur `/api`.
 
 1. Lancer l’infra : `make up PROFILES=infra` (ou `full` / apps selon besoin).
 2. Résoudre les noms vers localhost :
@@ -136,8 +137,7 @@ Catalogue des clones : `local/repos.tsv` (`make clone` / `make repos-check`).
 | Clients | `play`, `play_music_ai` |
 | Deployment | `helm-charts` |
 
-Seul `deepi_monitor` est un service Compose aujourd’hui (`PROFILES=monitor`).
-Les autres apps / infra sont clonées, pas encore lancées par `make up`.
+Les apps du tableau Profiles se lancent avec `make up PROFILES="infra {profile}"`. `deepi_monitor` reste à part : `PROFILES=monitor`.
 
 ## Profiles
 
@@ -155,7 +155,8 @@ Les autres apps / infra sont clonées, pas encore lancées par `make up`.
 | `deepiads` | deepiads (UI + API + Postgres + Redis dédiés) |
 | `deepikiosk` | deepikiosk |
 | `deepiflow` | deepiflow (UI + API + Postgres pgvector) |
-| `apps` | auth (+ admin) + platform + messaging + scheduler + deepipush + deepivoice + deepiads + deepikiosk + deepiflow |
+| `deepilive` | deepilive (UI + API + Postgres dédié) |
+| `apps` | auth (+ admin) + platform + messaging + scheduler + deepipush + deepivoice + deepiads + deepikiosk + deepiflow + deepilive |
 | `full` | infra + otel + apps. Pas Monitor : `PROFILES=monitor` seulement (dépôt `deepi_monitor` vide) |
 
 Observabilité locale (alignée helm-charts / deepilot) :
@@ -195,7 +196,7 @@ make up PROFILES="infra platform" DEV=platform    # build local + reload
 make up PROFILES="infra auth platform" DEV=auth   # platform GHCR, auth local
 make up PROFILES="infra otel auth platform" DEV="auth platform"
 make up PROFILES="infra monitor" DEV=monitor      # deepi_monitor (/v1/health)
-make up PROFILES=full DEV="auth platform deepipush deepivoice deepiads deepikiosk deepiflow"
+make up PROFILES=full DEV="auth platform deepipush deepivoice deepiads deepikiosk deepiflow deepilive"
 # DEV=monitor seulement si deepi_monitor/backend existe (le dépôt GitHub est vide)
 ```
 
@@ -204,7 +205,7 @@ make up PROFILES=full DEV="auth platform deepipush deepivoice deepiads deepikios
 | Mode | Mécanisme |
 |---|---|
 | Défaut | `image:` GHCR dans `docker-compose.yml` (`AUTH_IMAGE` / `PLATFORM_IMAGE`) |
-| Dev | overlay `overlays/dev-<app>.yml` via `DEV=auth`, `platform`, `monitor`, `deepipush`, `deepivoice`, `deepiads`, `deepikiosk`, `deepiflow` |
+| Dev | overlay `overlays/dev-<app>.yml` via `DEV=auth`, `platform`, `monitor`, `deepipush`, `deepivoice`, `deepiads`, `deepikiosk`, `deepiflow`, `deepilive` |
 
 L’overlay force `build:` + volumes (`app/`, `contracts/`) + `Dockerfile.dev`
 (uvicorn `--reload`).

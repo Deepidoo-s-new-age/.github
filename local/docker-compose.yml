@@ -17,9 +17,10 @@
 #   http://deepiads.new-age.me
 #   http://deepikiosk.new-age.me
 #   http://deepiflow.new-age.me
+#   http://deepilive.new-age.me
 #
 # Profiles: infra | otel | auth | platform | monitor | messaging | scheduler
-#           | deepipush | deepivoice | deepiads | deepikiosk | deepiflow | apps | full
+#           | deepipush | deepivoice | deepiads | deepikiosk | deepiflow | deepilive | apps | full
 
 name: new-age
 
@@ -939,6 +940,89 @@ services:
       - traefik.http.routers.deepiflow.entrypoints=web
       - traefik.http.services.deepiflow.loadbalancer.server.port=5283
 
+  deepilive-db:
+    image: postgres:17
+    profiles: ["deepilive", "apps", "full"]
+    container_name: na-deepilive-db
+    environment:
+      POSTGRES_USER: deepi_live
+      POSTGRES_PASSWORD: deepi_live_password
+      POSTGRES_DB: deepi_live
+    volumes:
+      - na_deepilive_pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U deepi_live -d deepi_live"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    networks: [na]
+
+  deepilive-api:
+    profiles: ["deepilive", "apps", "full"]
+    container_name: na-deepilive-api
+    image: na-deepilive-api:dev
+    pull_policy: never
+    build:
+      context: ../../deepi_live/backend
+      dockerfile: Dockerfile.dev
+    environment:
+      DEEPI_LIVE_DATABASE_URL: postgresql+asyncpg://deepi_live:deepi_live_password@deepilive-db:5432/deepi_live
+      JWT_SECRET: ${JWT_SECRET:-change-me}
+      JWT_ISSUER: deepidoo-auth
+      AUTH_SKIP_JTI_CHECK: "true"
+      AUTH_SERVICE_URL: http://auth-service:8000
+      REDIS_URL: redis://redis:6379/14
+      CORS_ORIGINS: http://deepilive.${NEW_AGE_DOMAIN:-new-age.me},http://localhost:5290
+    volumes:
+      - ../../deepi_live/backend/app:/app/app
+      - ../../deepi_live/backend/alembic:/app/alembic
+      - ../../deepi_live/backend/alembic.ini:/app/alembic.ini
+      - ../../contracts:/contracts
+      - ../../deepilot:/deepilot
+    ports:
+      - "${DEEPILIVE_API_HOST_PORT:-8092}:8000"
+    depends_on:
+      deepilive-db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks: [na]
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.deepilive-api.rule=Host(`deepilive.${NEW_AGE_DOMAIN:-new-age.me}`) && PathPrefix(`/api`)
+      - traefik.http.routers.deepilive-api.priority=100
+      - traefik.http.routers.deepilive-api.entrypoints=web
+      - traefik.http.services.deepilive-api.loadbalancer.server.port=8000
+
+  deepilive:
+    profiles: ["deepilive", "apps", "full"]
+    container_name: na-deepilive-web
+    image: na-deepilive-web:dev
+    pull_policy: never
+    build:
+      context: ../../deepi_live/frontend-web
+      dockerfile: Dockerfile.dev
+    environment:
+      VITE_API_PROXY_TARGET: http://deepilive-api:8000
+      VITE_AUTH_PROXY_TARGET: http://auth-service:8000
+    volumes:
+      - ../../deepi_live/frontend-web:/app
+      - na_deepilive_node_modules:/app/node_modules
+      - ../../deesplay:/deesplay
+      # Masque le tsconfig du monorepo deesplay (extends @tsconfig/node22).
+      - ./docker/deesplay-consumer-tsconfig.json:/deesplay/tsconfig.json:ro
+    ports:
+      - "${DEEPILIVE_WEB_HOST_PORT:-5290}:5290"
+    depends_on:
+      - deepilive-api
+    networks: [na]
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.deepilive.rule=Host(`deepilive.${NEW_AGE_DOMAIN:-new-age.me}`)
+      - traefik.http.routers.deepilive.priority=1
+      - traefik.http.routers.deepilive.entrypoints=web
+      - traefik.http.services.deepilive.loadbalancer.server.port=5290
+
 volumes:
   na_pgdata:
   na_pgadmin:
@@ -962,6 +1046,8 @@ volumes:
     name: play_music_ai_postgres_data
   na_deepiflow_data:
   na_deepiflow_node_modules:
+  na_deepilive_pg:
+  na_deepilive_node_modules:
 
 networks:
   na:

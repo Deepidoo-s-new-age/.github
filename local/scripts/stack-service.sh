@@ -60,6 +60,9 @@ resolve_service() {
     deepiflow|na-deepiflow-web)       echo deepiflow ;;
     deepiflow-api|na-deepiflow-api)   echo deepiflow-api ;;
     deepiflow-db|na-deepiflow-db)     echo deepiflow-db ;;
+    deepilive|na-deepilive-web)       echo deepilive ;;
+    deepilive-api|na-deepilive-api)   echo deepilive-api ;;
+    deepilive-db|na-deepilive-db)     echo deepilive-db ;;
     *)                                  echo "$1" ;;
   esac
 }
@@ -97,6 +100,9 @@ container_name_for() {
     deepiflow)     echo na-deepiflow-web ;;
     deepiflow-api) echo na-deepiflow-api ;;
     deepiflow-db)  echo na-deepiflow-db ;;
+    deepilive)     echo na-deepilive-web ;;
+    deepilive-api) echo na-deepilive-api ;;
+    deepilive-db)  echo na-deepilive-db ;;
     *)             echo "" ;;
   esac
 }
@@ -115,6 +121,7 @@ profiles_for() {
     deepiads|deepiads-api)          echo "deepiads apps full" ;;
     deepikiosk)                     echo "deepikiosk apps full" ;;
     deepiflow|deepiflow-api|deepiflow-db) echo "deepiflow apps full" ;;
+    deepilive|deepilive-api|deepilive-db) echo "deepilive apps full" ;;
     *)                              echo "?" ;;
   esac
 }
@@ -124,8 +131,8 @@ kind_for() {
     traefik|postgres|redis|pgadmin) echo infra ;;
     tempo|loki|prometheus|grafana)  echo otel ;;
     auth-admin)                     echo web ;;
-    auth-service|platform-api|deepi-monitor|messaging-api|scheduler|deepipush|deepivoice-api|deepiads-api|deepiflow-api) echo api ;;
-    messaging|deepivoice|deepiads|deepikiosk|deepipush-web|deepiflow) echo web ;;
+    auth-service|platform-api|deepi-monitor|messaging-api|scheduler|deepipush|deepivoice-api|deepiads-api|deepiflow-api|deepilive-api) echo api ;;
+    messaging|deepivoice|deepiads|deepikiosk|deepipush-web|deepiflow|deepilive) echo web ;;
     *)                              echo svc ;;
   esac
 }
@@ -309,6 +316,11 @@ compose_paths_for() {
       echo "Overlay:  local/overlays/dev-deepiflow.yml  (DEV=deepiflow)"
       echo "DEV: Dockerfile.dev déjà dans le compose, uvicorn --reload explicite."
       ;;
+    deepilive|deepilive-api)
+      echo "Compose:  local/docker-compose.yml  (deepilive + deepilive-api + deepilive-db)"
+      echo "Overlay:  local/overlays/dev-deepilive.yml  (DEV=deepilive)"
+      echo "URL: http://deepilive.new-age.me  (API /api, Vite :5290)"
+      ;;
   esac
 }
 
@@ -468,6 +480,19 @@ URL : http://deepiflow.new-age.me
 Logs :
   docker logs -f na-deepiflow-api
   docker logs -f na-deepiflow-web
+EOF
+      ;;
+    deepilive|deepilive-api|deepilive-db)
+      cat <<EOF
+Relancer en DEV (uvicorn --reload + Vite) :
+  cd .github && make up PROFILES="infra auth deepilive" DEV=deepilive
+
+URL : http://deepilive.new-age.me
+Port direct : http://localhost:5290
+
+Logs :
+  docker logs -f na-deepilive-api
+  docker logs -f na-deepilive-web
 EOF
       ;;
   esac
