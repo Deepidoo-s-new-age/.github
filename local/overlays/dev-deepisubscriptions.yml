@@ -1,0 +1,38 @@
+# Hot-reload overlay for deepisubscriptions.
+# Enabled by: make up … DEV=deepisubscriptions
+# Paths are relative to local/ (project dir = first -f compose file).
+#
+# API: bind-mount backend/ and uvicorn --reload. Alembic runs before the server.
+# Web: Vite on 5177. deesplay is the sibling clone
+# (package.json file:../../deesplay/packages/deesplay).
+
+services:
+  deepisubscriptions-api:
+    volumes:
+      - ../../deepisubscriptions/backend:/app
+      - ../../contracts:/opt/contracts
+    command:
+      [
+        "sh",
+        "-c",
+        "alembic upgrade head && exec uvicorn app.main:app --host 0.0.0.0 --port 8002 --reload --reload-dir /app/app",
+      ]
+
+  deepisubscriptions:
+    environment:
+      VITE_API_URL: http://deepisubscriptions.${NEW_AGE_DOMAIN:-new-age.me}
+      VITE_AUTH_SERVICE_URL: http://auth-service.${NEW_AGE_DOMAIN:-new-age.me}
+    volumes:
+      - ../../deepisubscriptions/frontend-web:/workspace/subscriptions/frontend-web
+      - na_deepisubscriptions_node_modules:/workspace/subscriptions/frontend-web/node_modules
+      - ../../deesplay:/workspace/deesplay
+      - ./docker/deesplay-consumer-tsconfig.json:/workspace/deesplay/tsconfig.json:ro
+    command:
+      [
+        "sh",
+        "-c",
+        "npm install && npm run dev -- --host 0.0.0.0 --port 5177 --strictPort",
+      ]
+
+volumes:
+  na_deepisubscriptions_node_modules:

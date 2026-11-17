@@ -18,9 +18,11 @@
 #   http://deepikiosk.new-age.me
 #   http://deepiflow.new-age.me
 #   http://deepilive.new-age.me
+#   http://deepisubscriptions.new-age.me
 #
 # Profiles: infra | otel | auth | platform | monitor | messaging | scheduler
-#           | deepipush | deepivoice | deepiads | deepikiosk | deepiflow | deepilive | apps | full
+#           | deepipush | deepivoice | deepiads | deepikiosk | deepiflow | deepilive
+#           | deepisubscriptions | apps | full
 
 name: new-age
 
@@ -266,7 +268,7 @@ services:
       REDIS_URL: ${REDIS_URL:-redis://redis:6379/14}
       JWT_SECRET: ${JWT_SECRET:-change-me}
       JWT_ISSUER: ${JWT_ISSUER:-deepidoo-auth}
-      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173,http://127.0.0.1:5173,http://localhost:5174,http://127.0.0.1:5174,http://localhost:5283,http://127.0.0.1:5283,http://auth-service.new-age.me,http://auth-admin.new-age.me,http://platform-api.new-age.me,http://deepiflow.new-age.me}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173,http://127.0.0.1:5173,http://localhost:5174,http://127.0.0.1:5174,http://localhost:5283,http://127.0.0.1:5283,http://auth-service.new-age.me,http://auth-admin.new-age.me,http://platform-api.new-age.me,http://deepiflow.new-age.me,http://deepisubscriptions.new-age.me,http://localhost:5187,http://127.0.0.1:5187}
       # Arbre d'organisations des routes /v1/org/* (org:admin)
       PLATFORM_API_BASE_URL: ${PLATFORM_API_BASE_URL:-http://platform-api:8000}
       # Modules M2M de dev (secret public) — local uniquement
@@ -777,7 +779,7 @@ services:
       - traefik.http.services.deepiads.loadbalancer.server.port=8080
 
   deepikiosk-api:
-    profiles: ["deepikiosk", "apps", "full"]
+    profiles: ["deepikiosk-api"]
     container_name: na-deepikiosk-api
     image: na-deepikiosk-api:dev
     pull_policy: never
@@ -826,32 +828,32 @@ services:
     image: na-deepikiosk-web:dev
     pull_policy: never
     build:
-      context: ../../deepikiosk/frontend-web
+      context: ../../deepikiosk
       dockerfile_inline: |
         FROM node:22-alpine
         WORKDIR /app
-        EXPOSE 5184
-        CMD ["sh", "-c", "cp package-lock.json /tmp/pl.json && rm package-lock.json && npm install && mv /tmp/pl.json package-lock.json && npm run dev -- --host 0.0.0.0 --port 5184 --strictPort"]
-    command: ["sh", "-c", "cp package-lock.json /tmp/pl.json && rm package-lock.json && npm install && mv /tmp/pl.json package-lock.json && npm run dev -- --host 0.0.0.0 --port 5184 --strictPort"]
+        COPY package.json package-lock.json ./
+        RUN npm ci
+        EXPOSE 3000
+        CMD ["node", "--watch", "server.js"]
     environment:
-      VITE_API_PROXY_TARGET: http://deepikiosk-api:8000
-      VITE_AUTH_PROXY_TARGET: http://auth-service:8000
-      VITE_AUTH_SERVICE_URL: http://auth-service.${NEW_AGE_DOMAIN:-new-age.me}
+      NODE_ENV: development
+      PORT: "3000"
     volumes:
-      - ../../deepikiosk/frontend-web:/app
-      - na_deepikiosk_node_modules:/app/node_modules
-      - ../../deesplay:/deesplay
+      - ../../deepikiosk/server.js:/app/server.js
+      - ../../deepikiosk/lib:/app/lib
+      - ../../deepikiosk/views:/app/views
+      - ../../deepikiosk/public:/app/public
+      - na_deepikiosk_data:/app/data
     ports:
-      - "${DEEPIKIOSK_HOST_PORT:-3022}:5184"
-    depends_on:
-      - deepikiosk-api
+      - "${DEEPIKIOSK_HOST_PORT:-3022}:3000"
     networks: [na]
     labels:
       - traefik.enable=true
       - traefik.http.routers.deepikiosk.rule=Host(`deepikiosk.${NEW_AGE_DOMAIN:-new-age.me}`)
       - traefik.http.routers.deepikiosk.priority=1
       - traefik.http.routers.deepikiosk.entrypoints=web
-      - traefik.http.services.deepikiosk.loadbalancer.server.port=5184
+      - traefik.http.services.deepikiosk.loadbalancer.server.port=3000
 
   deepiflow-db:
     image: pgvector/pgvector:pg16
@@ -1023,6 +1025,70 @@ services:
       - traefik.http.routers.deepilive.entrypoints=web
       - traefik.http.services.deepilive.loadbalancer.server.port=5290
 
+  # Subscriptions — schéma Postgres `subscriptions` (alembic au démarrage).
+  # Même host Traefik : /api → API, le reste → Vite.
+  deepisubscriptions-api:
+    <<: *app-common
+    profiles: ["deepisubscriptions", "apps", "full"]
+    container_name: na-deepisubscriptions-api
+    image: na-deepisubscriptions-api:dev
+    pull_policy: never
+    build:
+      context: ../../deepisubscriptions
+      dockerfile: backend/Dockerfile
+      additional_contexts:
+        contracts: ../../contracts
+    environment:
+      APP_NAME: Subscriptions
+      ENVIRONMENT: development
+      DATABASE_URL: postgresql+psycopg://newage:newage@postgres:5432/new_age?options=-csearch_path%3Dsubscriptions%2Cpublic
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/14}
+      AUTH_SERVICE_URL: http://auth-service:8000
+      PLATFORM_API_URL: http://platform-api:8000
+      PLATFORM_SERVICE_TOKEN: change-me
+      MODULE_ID: subscriptions
+      MODULE_CLIENT_ID: subscriptions_local
+      MODULE_CLIENT_SECRET: changeme-dev-only
+      JWT_SECRET: ${JWT_SECRET:-change-me}
+      JWT_ISSUER: ${JWT_ISSUER:-deepidoo-auth}
+      AUTH_SKIP_JTI_CHECK: ${AUTH_SKIP_JTI_CHECK:-false}
+      PRESENCE_TTL_SECONDS: "45"
+      HTTP_TIMEOUT_SECONDS: "10"
+      CORS_ORIGINS: http://deepisubscriptions.${NEW_AGE_DOMAIN:-new-age.me},http://localhost:5187,http://127.0.0.1:5187
+    ports:
+      - "${DEEPISUBSCRIPTIONS_API_HOST_PORT:-8022}:8002"
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.deepisubscriptions-api.rule=Host(`deepisubscriptions.${NEW_AGE_DOMAIN:-new-age.me}`) && PathPrefix(`/api`)
+      - traefik.http.routers.deepisubscriptions-api.priority=100
+      - traefik.http.routers.deepisubscriptions-api.entrypoints=web
+      - traefik.http.services.deepisubscriptions-api.loadbalancer.server.port=8002
+
+  deepisubscriptions:
+    profiles: ["deepisubscriptions", "apps", "full"]
+    container_name: na-deepisubscriptions-web
+    image: na-deepisubscriptions-web:dev
+    pull_policy: never
+    build:
+      context: ../../deepisubscriptions
+      dockerfile: frontend-web/Dockerfile
+      additional_contexts:
+        deesplay: ../../deesplay
+    environment:
+      VITE_API_URL: http://deepisubscriptions.${NEW_AGE_DOMAIN:-new-age.me}
+      VITE_AUTH_SERVICE_URL: http://auth-service.${NEW_AGE_DOMAIN:-new-age.me}
+    ports:
+      - "${DEEPISUBSCRIPTIONS_WEB_HOST_PORT:-5187}:5177"
+    depends_on:
+      - deepisubscriptions-api
+    networks: [na]
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.deepisubscriptions.rule=Host(`deepisubscriptions.${NEW_AGE_DOMAIN:-new-age.me}`)
+      - traefik.http.routers.deepisubscriptions.priority=1
+      - traefik.http.routers.deepisubscriptions.entrypoints=web
+      - traefik.http.services.deepisubscriptions.loadbalancer.server.port=5177
+
 volumes:
   na_pgdata:
   na_pgadmin:
@@ -1048,6 +1114,7 @@ volumes:
   na_deepiflow_node_modules:
   na_deepilive_pg:
   na_deepilive_node_modules:
+  na_deepisubscriptions_node_modules:
 
 networks:
   na:

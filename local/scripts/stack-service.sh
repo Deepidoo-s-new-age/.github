@@ -63,6 +63,8 @@ resolve_service() {
     deepilive|na-deepilive-web)       echo deepilive ;;
     deepilive-api|na-deepilive-api)   echo deepilive-api ;;
     deepilive-db|na-deepilive-db)     echo deepilive-db ;;
+    deepisubscriptions|na-deepisubscriptions-web) echo deepisubscriptions ;;
+    deepisubscriptions-api|na-deepisubscriptions-api) echo deepisubscriptions-api ;;
     *)                                  echo "$1" ;;
   esac
 }
@@ -103,6 +105,8 @@ container_name_for() {
     deepilive)     echo na-deepilive-web ;;
     deepilive-api) echo na-deepilive-api ;;
     deepilive-db)  echo na-deepilive-db ;;
+    deepisubscriptions) echo na-deepisubscriptions-web ;;
+    deepisubscriptions-api) echo na-deepisubscriptions-api ;;
     *)             echo "" ;;
   esac
 }
@@ -122,6 +126,7 @@ profiles_for() {
     deepikiosk)                     echo "deepikiosk apps full" ;;
     deepiflow|deepiflow-api|deepiflow-db) echo "deepiflow apps full" ;;
     deepilive|deepilive-api|deepilive-db) echo "deepilive apps full" ;;
+    deepisubscriptions|deepisubscriptions-api) echo "deepisubscriptions apps full" ;;
     *)                              echo "?" ;;
   esac
 }
@@ -131,8 +136,8 @@ kind_for() {
     traefik|postgres|redis|pgadmin) echo infra ;;
     tempo|loki|prometheus|grafana)  echo otel ;;
     auth-admin)                     echo web ;;
-    auth-service|platform-api|deepi-monitor|messaging-api|scheduler|deepipush|deepivoice-api|deepiads-api|deepiflow-api|deepilive-api) echo api ;;
-    messaging|deepivoice|deepiads|deepikiosk|deepipush-web|deepiflow|deepilive) echo web ;;
+    auth-service|platform-api|deepi-monitor|messaging-api|scheduler|deepipush|deepivoice-api|deepiads-api|deepiflow-api|deepilive-api|deepisubscriptions-api) echo api ;;
+    messaging|deepivoice|deepiads|deepikiosk|deepipush-web|deepiflow|deepilive|deepisubscriptions) echo web ;;
     *)                              echo svc ;;
   esac
 }
@@ -321,6 +326,11 @@ compose_paths_for() {
       echo "Overlay:  local/overlays/dev-deepilive.yml  (DEV=deepilive)"
       echo "URL: http://deepilive.new-age.me  (API /api, Vite :5290)"
       ;;
+    deepisubscriptions|deepisubscriptions-api)
+      echo "Compose:  local/docker-compose.yml  (deepisubscriptions + deepisubscriptions-api)"
+      echo "Overlay:  local/overlays/dev-deepisubscriptions.yml  (DEV=deepisubscriptions)"
+      echo "URL: http://deepisubscriptions.new-age.me  (API /api, Vite :5177, hôte :5187)"
+      ;;
   esac
 }
 
@@ -493,6 +503,20 @@ Port direct : http://localhost:5290
 Logs :
   docker logs -f na-deepilive-api
   docker logs -f na-deepilive-web
+EOF
+      ;;
+    deepisubscriptions|deepisubscriptions-api)
+      cat <<EOF
+Relancer en DEV (uvicorn --reload + Vite) :
+  cd .github && make up PROFILES="infra auth deepisubscriptions" DEV=deepisubscriptions
+
+URL : http://deepisubscriptions.new-age.me
+API directe : http://localhost:8022
+Front direct : http://localhost:5187
+
+Logs :
+  docker logs -f na-deepisubscriptions-api
+  docker logs -f na-deepisubscriptions-web
 EOF
       ;;
   esac

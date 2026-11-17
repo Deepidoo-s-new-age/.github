@@ -78,6 +78,7 @@ Traefik écoute sur le **port 80** et route selon le `Host` :
 | http://deepikiosk.new-age.me | deepikiosk |
 | http://deepiflow.new-age.me | deepiflow |
 | http://deepilive.new-age.me | deepilive |
+| http://deepisubscriptions.new-age.me | deepisubscriptions (UI + API `/api`) |
 | http://traefik.new-age.me | dashboard Traefik (aussi `:8080`) |
 
 `deepi_live` est servi sur `deepilive.new-age.me` (le hostname n’a pas d’underscore). `deepi_monitor` reste sur `monitor.new-age.me`.
@@ -85,10 +86,10 @@ Traefik écoute sur le **port 80** et route selon le `Host` :
 Les six noms sont routés par Traefik une fois les profiles lancés (avec `infra`, sinon Traefik ne tourne pas) :
 
 ```bash
-make up PROFILES="infra messaging scheduler deepipush deepivoice deepiads deepikiosk deepiflow deepilive"
+make up PROFILES="infra messaging scheduler deepipush deepivoice deepiads deepikiosk deepiflow deepilive deepisubscriptions"
 ```
 
-`scheduler` ouvre `/docs`. `deepipush` sert le front Relais. `deepivoice` sert la landing, l’app est sur `/app/`. `deepiflow` sert le front Vite, l’API est proxifiée sur `/api`. `deepilive` sert le front Vite sur `/`, l’API sur `/api`.
+`scheduler` ouvre `/docs`. `deepipush` sert le front Relais. `deepivoice` sert la landing, l’app est sur `/app/`. `deepiflow` sert le front Vite, l’API est proxifiée sur `/api`. `deepilive` sert le front Vite sur `/`, l’API sur `/api`. `deepisubscriptions` sert le front Vite sur `/`, l’API sur `/api`.
 
 1. Lancer l’infra : `make up PROFILES=infra` (ou `full` / apps selon besoin).
 2. Résoudre les noms vers localhost :
@@ -133,7 +134,7 @@ Catalogue des clones : `local/repos.tsv` (`make clone` / `make repos-check`).
 |---|---|
 | Foundations | `contracts`, `deepilot`, `auth-service`, `platform-api`, `deesplay` |
 | Infra | `messaging`, `scheduler` |
-| Apps | `deepipush` (ex `call_me_maybe`), `deepivoice`, `deepi_monitor`, `deepi_live`, `deepiads`, `deepikiosk`, `deepiflow` |
+| Apps | `deepipush` (ex `call_me_maybe`), `deepivoice`, `deepi_monitor`, `deepi_live`, `deepiads`, `deepikiosk`, `deepiflow`, `deepisubscriptions` |
 | Clients | `play`, `play_music_ai` |
 | Deployment | `helm-charts` |
 
@@ -156,7 +157,8 @@ Les apps du tableau Profiles se lancent avec `make up PROFILES="infra {profile}"
 | `deepikiosk` | deepikiosk |
 | `deepiflow` | deepiflow (UI + API + Postgres pgvector) |
 | `deepilive` | deepilive (UI + API + Postgres dédié) |
-| `apps` | auth (+ admin) + platform + messaging + scheduler + deepipush + deepivoice + deepiads + deepikiosk + deepiflow + deepilive |
+| `deepisubscriptions` | deepisubscriptions (UI + API, schéma Postgres `subscriptions`) |
+| `apps` | auth (+ admin) + platform + messaging + scheduler + deepipush + deepivoice + deepiads + deepikiosk + deepiflow + deepilive + deepisubscriptions |
 | `full` | infra + otel + apps. Pas Monitor : `PROFILES=monitor` seulement (dépôt `deepi_monitor` vide) |
 
 Observabilité locale (alignée helm-charts / deepilot) :
@@ -196,7 +198,7 @@ make up PROFILES="infra platform" DEV=platform    # build local + reload
 make up PROFILES="infra auth platform" DEV=auth   # platform GHCR, auth local
 make up PROFILES="infra otel auth platform" DEV="auth platform"
 make up PROFILES="infra monitor" DEV=monitor      # deepi_monitor (/v1/health)
-make up PROFILES=full DEV="auth platform deepipush deepivoice deepiads deepikiosk deepiflow deepilive"
+make up PROFILES=full DEV="auth platform deepipush deepivoice deepiads deepikiosk deepiflow deepilive deepisubscriptions"
 # DEV=monitor seulement si deepi_monitor/backend existe (le dépôt GitHub est vide)
 ```
 
@@ -205,7 +207,7 @@ make up PROFILES=full DEV="auth platform deepipush deepivoice deepiads deepikios
 | Mode | Mécanisme |
 |---|---|
 | Défaut | `image:` GHCR dans `docker-compose.yml` (`AUTH_IMAGE` / `PLATFORM_IMAGE`) |
-| Dev | overlay `overlays/dev-<app>.yml` via `DEV=auth`, `platform`, `monitor`, `deepipush`, `deepivoice`, `deepiads`, `deepikiosk`, `deepiflow`, `deepilive` |
+| Dev | overlay `overlays/dev-<app>.yml` via `DEV=auth`, `platform`, `monitor`, `deepipush`, `deepivoice`, `deepiads`, `deepikiosk`, `deepiflow`, `deepilive`, `deepisubscriptions` |
 
 L’overlay force `build:` + volumes (`app/`, `contracts/`) + `Dockerfile.dev`
 (uvicorn `--reload`).
@@ -313,6 +315,8 @@ vivent hors du volume `na_pgdata`.
 | auth-admin (ACL UI) | 5174 | auth-admin.new-age.me |
 | platform-api | 8001 | platform-api.new-age.me |
 | deepi-monitor | 8010 | monitor.new-age.me |
+| deepisubscriptions API | 8022 | deepisubscriptions.new-age.me (`/api`) |
+| deepisubscriptions UI | 5187 | deepisubscriptions.new-age.me |
 | Grafana (profile `otel`) | 3001 | grafana.new-age.me |
 | Tempo OTLP / HTTP | 4318 / 3200 | — |
 | Loki | 3100 | — |
