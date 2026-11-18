@@ -179,8 +179,8 @@ If the module is **`design_mode: frontend_only`**, stop before phases 1–4 (bac
 - [ ] companion `PAIRS` updated only when other previews run this image
 - [ ] coverage-baseline.txt
 - [ ] docs/module.yaml + openapi.json + architecture-baseline.txt
-- [ ] Dockerfile prod + SCHEMAS_READ_TOKEN documented
-- [ ] HELM_CHARTS_TOKEN + promote job
+- [ ] Asked the user to create both repository secrets: `SCHEMAS_READ_TOKEN` (classic PAT, `repo` + `read:packages`) and `HELM_CHARTS_TOKEN` (fine-grained, `helm-charts` only)
+- [ ] Promote job uses `HELM_CHARTS_TOKEN`
 - [ ] helm-charts values (preprod/prod/preview)
 - [ ] helmfile + Argo Application
 - [ ] prometheus externalProbes + server-errors rule
