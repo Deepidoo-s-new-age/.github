@@ -17,10 +17,10 @@ Phase 0, at the end of the Python workflows.
 ```bash
 uv export --frozen --no-dev --no-hashes -o /tmp/requirements.txt
 grep -v -E '^-e |^file:' /tmp/requirements.txt > /tmp/requirements.pypi.txt
-uvx pip-audit -r /tmp/requirements.pypi.txt
+uvx pip-audit -r /tmp/requirements.pypi.txt --format json
 ```
 
-Path dependencies such as `../../contracts` are stripped. They are our code, not a PyPI advisory. An allowlist is a committed file for a CVE we accept on purpose, with a reason and a removal date.
+Path dependencies such as `../../contracts` are stripped. They are our code, not a PyPI advisory. A finding fails the job when pip-audit lists a patched release. A finding with an empty fix list is a warning. There is no vulnerability ignore list.
 
 ## Installation
 
@@ -36,7 +36,7 @@ Uses the lockfile we already commit. No extra account.
 
 ## Cons
 
-A new advisory can turn `main` red without a code change. The allowlist is the escape hatch, not a silent skip.
+A new advisory with a patched release can turn `main` red without a code change. An advisory that still has no patched release warns and leaves the job green.
 
 ## Alternatives
 

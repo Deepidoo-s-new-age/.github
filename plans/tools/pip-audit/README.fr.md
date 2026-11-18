@@ -17,10 +17,10 @@ Phase 0, à la fin des workflows Python.
 ```bash
 uv export --frozen --no-dev --no-hashes -o /tmp/requirements.txt
 grep -v -E '^-e |^file:' /tmp/requirements.txt > /tmp/requirements.pypi.txt
-uvx pip-audit -r /tmp/requirements.pypi.txt
+uvx pip-audit -r /tmp/requirements.pypi.txt --format json
 ```
 
-Les dépendances par chemin, comme `../../contracts`, sont retirées. C’est notre code, pas un avis PyPI. Une liste d’exceptions est un fichier commité pour une CVE qu’on accepte exprès, avec une raison et une date de retrait.
+Les dépendances par chemin, comme `../../contracts`, sont retirées. C’est notre code, pas un avis PyPI. Un avis fait échouer le job quand pip-audit indique une version corrigée. Un avis sans version corrigée est un avertissement. Il n’y a pas de liste d’exceptions.
 
 ## Installation
 
@@ -36,7 +36,7 @@ Il utilise le lockfile qu’on commit déjà. Pas de compte supplémentaire.
 
 ## Inconvénients
 
-Un nouvel avis peut rendre `main` rouge sans changement de code. La liste d’exceptions est la sortie de secours, pas un silence.
+Un nouvel avis qui a une version corrigée peut rendre `main` rouge sans changement de code. Un avis qui n’a toujours pas de version corrigée avertit et laisse le job vert.
 
 ## Alternatives
 
