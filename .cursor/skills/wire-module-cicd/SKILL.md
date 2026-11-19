@@ -35,7 +35,7 @@ Previews use **`ci-workflows` `preview.yml`** (pin **`ci-v1.0.14`**); promote re
 ## Hard rules
 
 1. Organization **`Deepidoo-s-new-age`** only — reusable workflows refuse other owners.
-2. Pin the tag from the table in phase 3 — never `@main`, and never an older `ci-v1.0.*` tag copied from history. Image jobs are **`ci-v1.0.21`**; every other reusable workflow stays **`ci-v1.0.14`**. The tag is created on `ci-workflows` `main` with **Actions → Tag ci release** after that commit merges. A caller that names the tag fails until the tag exists.
+2. Pin the tag from the table in phase 3 — never `@main`, and never an older `ci-v1.0.*` tag copied from history. Image jobs are **`ci-v1.0.21`**. `sonarqube.yml` is **`ci-v1.0.23`** once that tag exists; do not point it at an older tag. Every other reusable workflow stays **`ci-v1.0.14`**. The tag is created on `ci-workflows` `main` with **Actions → Tag ci release** after that commit merges. A caller that names the tag fails until the tag exists.
 3. **`deepilot`** git tag **`v0.1.7`** (or newer) in `[project].dependencies`, not dev-only. `0.1.6` crashes when `httpx` is absent. CI runs `python -m deepilot.probe`.
 4. **`deepidoo-contracts`** git tag is the tag on `auth-service` `main` today (`v0.2.0`). Do not copy `v0.1.0` from old progress notes.
 5. **`docs/module.yaml`** filled for business modules; architecture job compares routes. If `design_mode: frontend_only`, stop. Do not add backend, images, or Helm until the user clears that flag.
