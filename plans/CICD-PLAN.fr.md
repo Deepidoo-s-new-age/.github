@@ -388,7 +388,7 @@ Ligne d’arrivée : Kyverno en production n’admet qu’un digest signé nomm�
 
 ### Phase 10 — SonarQube, optionnel
 
-SonarQube Community Build sert une UI de qualité depuis la préproduction (`helm-charts/charts/sonarqube` et son propre Postgres). `sonarqube.yml` dans `ci-workflows` analyse `main` après les tests et importe le rapport de couverture de la phase 2. `auth-service` et `platform-api` l’appellent. Le gate de merge reste les checks GitHub des phases 1, 2 et 5.
+SonarQube Community Build sert une UI de qualité depuis le namespace `sonarqube` (`helm-charts/charts/sonarqube` et son propre Postgres). `sonarqube.yml` dans `ci-workflows` analyse `main` après les tests et importe le rapport de couverture de la phase 2. `auth-service` et `platform-api` l’appellent. Le gate de merge reste les checks GitHub des phases 1, 2 et 5.
 
 Ligne d’arrivée : `main` a un projet Sonar par dépôt. Un gate Sonar rouge ne remplace pas un check CI rouge.
 
@@ -435,7 +435,7 @@ Ligne d’arrivée : un agent peut atteindre une pull request verte et ne peut p
 | `NODE_AUTH_TOKEN` | dépôts qui font un npm install de GitHub Packages | deesplay, phase 4 |
 | Token de lecture de packages pour le cluster | `imagePullSecret` Kubernetes | tirer `ghcr.io/deepidoo-s-new-age/*` |
 | `SONAR_TOKEN` | secret Actions de l’organisation | Jeton Global Analysis Token SonarQube pour `sonarqube.yml` |
-| `SONAR_HOST_URL` | variable Actions de l’organisation, pas un secret | `http://sonarqube.preproduction.51.178.114.227.sslip.io` |
+| `SONAR_HOST_URL` | variable Actions de l’organisation, pas un secret | `http://sonarqube.51.178.114.227.sslip.io` |
 
 `TALKSPIRIT_WEBHOOK_URL` reste un secret Cursor. GitHub Actions ne poste pas ce récap.
 

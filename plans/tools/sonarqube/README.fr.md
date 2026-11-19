@@ -12,11 +12,11 @@ Certains veulent un écran pour « comment va ce dépôt ? » à travers les ser
 
 ## Comment on l’utilise
 
-Community Build est gratuit à auto-héberger. Un serveur en préproduction, son propre Postgres, chart `helm-charts/charts/sonarqube`. Le scanner est `sonarqube.yml` dans `ci-workflows`, appelé sur `main` après les tests. `auth-service` et `platform-api` l’appellent. Chaque dépôt a `sonar-project.properties` et un projet Sonar. Le job importe `coverage.xml`. `sonar.qualitygate.wait` est faux : un gate Sonar rouge ne fait pas échouer le job et ne bloque pas le merge. Les checks GitHub le font. Le job n’est pas dans les `needs` de l’image ni de la promotion.
+Community Build est gratuit à auto-héberger. Un serveur dans le namespace `sonarqube`, son propre Postgres, chart `helm-charts/charts/sonarqube`. Le scanner est `sonarqube.yml` dans `ci-workflows`, appelé sur `main` après les tests. `auth-service` et `platform-api` l’appellent. Chaque dépôt a `sonar-project.properties` et un projet Sonar. Le job importe `coverage.xml`. `sonar.qualitygate.wait` est faux : un gate Sonar rouge ne fait pas échouer le job et ne bloque pas le merge. Les checks GitHub le font. Le job n’est pas dans les `needs` de l’image ni de la promotion.
 
 ## Installation
 
-Le serveur est `sonarqube:26.11.0.134175-community` plus la release `sonarqube-postgres` du chart `charts/postgres` (base `sonar`). Applications Argo CD `preproduction-sonarqube-postgres` et `preproduction-sonarqube`. L’URL de debug est `http://sonarqube.preproduction.51.178.114.227.sslip.io`.
+Le serveur est `sonarqube:26.11.0.134175-community` plus la release `sonarqube-postgres` du chart `charts/postgres` (base `sonar`), tous deux dans le namespace `sonarqube`. Applications Argo CD `sonarqube-postgres` et `sonarqube`. L’URL de debug est `http://sonarqube.51.178.114.227.sslip.io`.
 
 Le scanner est `SonarSource/sonarqube-scan-action` `v8.5.0` dans `sonarqube.yml`, pin `ci-v1.0.23` après **Actions → Tag ci release** sur `main` de `ci-workflows`.
 
@@ -25,7 +25,7 @@ Organisation GitHub `Deepidoo-s-new-age` :
 | Nom | Sorte | Valeur |
 |---|---|---|
 | `SONAR_TOKEN` | secret Actions | Jeton Global Analysis Token dans l’UI SonarQube (My Account → Security), créé après la première connexion |
-| `SONAR_HOST_URL` | variable Actions | `http://sonarqube.preproduction.51.178.114.227.sslip.io` |
+| `SONAR_HOST_URL` | variable Actions | `http://sonarqube.51.178.114.227.sslip.io` |
 
 Première connexion : `admin` / `admin`. SonarQube exige ensuite un nouveau mot de passe. Ce mot de passe n’est pas dans git. Le mot de passe de base dans le chart est le placeholder inerte `sonar`.
 
