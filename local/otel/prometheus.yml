@@ -32,6 +32,10 @@ scrape_configs:
           - http://platform-api:8000/health
         labels:
           service: platform-api
+      - targets:
+          - http://messaging-api:8000/health
+        labels:
+          service: messaging
     relabel_configs:
       - source_labels: [__address__]
         target_label: __param_target

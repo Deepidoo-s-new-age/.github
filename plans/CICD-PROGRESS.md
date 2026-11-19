@@ -42,7 +42,8 @@ History: `ci-v1.0.9` (`22a4d53`, [#10](https://github.com/Deepidoo-s-new-age/ci-
 | `deesplay` | 5 | `1100f3e`. Package `1.0.1` unchanged. Semgrep is on `main` ([#1](https://github.com/Deepidoo-s-new-age/deesplay/pull/1)). Release workflow still pins `js-package.yml@ci-v1.0.3` |
 | `.github` | 5 | `8d6d8a9` ([#19](https://github.com/Deepidoo-s-new-age/.github/pull/19)). Holds this plan and `tools/validate_architecture.py` (`ce47fb1`) |
 | `menuboards`, `deep_desk`, `scheduler`, `tickets`, `roadmap`, `epaper` | — | Stopped before phase 2. No shared caller. Left uncloned on purpose |
-| `messaging`, `call_me_maybe`, `converter` | — | Stopped before phase 2. A caller is copied from `ci-workflows/examples/` when they hold code |
+| `messaging` | — | Code is on main (API + frontend-web). Shared callers, helm-charts releases with an empty digest, and the local compose alignment are prepared and not merged. Preview and the production promote checkbox are not in this change |
+| `call_me_maybe`, `converter` | — | `call_me_maybe` was renamed `deepipush`. `converter` still has no shared caller |
 | `Deepidoo/deesplay` | — | Left untouched. Legacy repositories still depend on `@deepidoo/deesplay` |
 
 ## Rulesets waiting on the GitHub plan
