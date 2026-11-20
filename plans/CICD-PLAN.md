@@ -388,7 +388,7 @@ Finish line: production Kyverno admits only a signed digest that Helmfile named.
 
 ### Phase 10 — SonarQube, optional
 
-Stand up SonarQube Community Build only if the team wants one quality UI. Point the scanner at `main` after tests, and import the coverage report from phase 2. The merge gate stays the GitHub checks from phases 1, 2, and 5.
+SonarQube Community Build serves one quality UI from the `sonarqube` namespace (`helm-charts/charts/sonarqube` and its own Postgres). `ci-workflows` `sonarqube.yml` scans `main` after tests and imports the coverage report from phase 2. `auth-service` and `platform-api` call it. The merge gate stays the GitHub checks from phases 1, 2, and 5.
 
 Finish line: `main` has a Sonar project per repo. A red Sonar gate does not replace a red CI check.
 
@@ -434,6 +434,8 @@ Finish line: an agent can reach a green pull request and cannot deploy productio
 | kubeconfig | `helm-charts` environment `preproduction` and `production` only | Helmfile apply, until Argo CD replaces it |
 | `NODE_AUTH_TOKEN` | repos that npm-install GitHub Packages | deesplay, phase 4 |
 | Package read token for the cluster | Kubernetes `imagePullSecret` | pull `ghcr.io/deepidoo-s-new-age/*` |
+| `SONAR_TOKEN` | organization Actions secret | SonarQube Global Analysis Token for `sonarqube.yml` |
+| `SONAR_HOST_URL` | organization Actions variable, not a secret | `http://sonarqube.51.178.114.227.sslip.io` |
 
 `TALKSPIRIT_WEBHOOK_URL` stays a Cursor secret. GitHub Actions does not post that recap.
 

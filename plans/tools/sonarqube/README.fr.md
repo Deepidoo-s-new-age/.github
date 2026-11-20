@@ -12,11 +12,22 @@ Certains veulent un écran pour « comment va ce dépôt ? » à travers les ser
 
 ## Comment on l’utilise
 
-Seulement si l’équipe veut encore cet écran. Community Build est gratuit à auto-héberger. Pointer le scanner sur `main` après les tests et importer `coverage.xml`. Un projet par dépôt porte `main`. Une pull request est analysée sous `<projectKey>-pull-request` et le job commente les mesures sur la pull request. Un gate Sonar rouge ne bloque pas le merge. Les checks GitHub le font.
+Community Build est gratuit à auto-héberger. Un serveur dans le namespace `sonarqube`, son propre Postgres, chart `helm-charts/charts/sonarqube`. Le scanner est `sonarqube.yml` dans `ci-workflows`, appelé après les tests sur une pull request et sur `main`. `auth-service` et `platform-api` l’appellent. Chaque dépôt a `sonar-project.properties`. Le projet `main` reste la branche `main`. Une pull request est analysée sous `<projectKey>-pull-request` et le job commente les mesures sur la pull request. Le job importe `coverage.xml`. `sonar.qualitygate.wait` est faux : un gate Sonar rouge ne fait pas échouer le job et ne bloque pas le merge. Les checks GitHub le font. Le job n’est pas dans les `needs` de l’image ni de la promotion.
 
 ## Installation
 
-Optionnel. Community Build est un serveur auto-hébergé, son chart Helm ou son conteneur, avec son propre Postgres. Le scanner est une étape de CI sur `main`, le CLI du scanner ou l’Action officielle, et il importe `coverage.xml` du job de tests.
+Le serveur est `sonarqube:26.11.0.134175-community` plus la release `sonarqube-postgres` du chart `charts/postgres` (base `sonar`), tous deux dans le namespace `sonarqube`. Applications Argo CD `sonarqube-postgres` et `sonarqube`. L’URL de debug est `http://sonarqube.51.178.114.227.sslip.io`.
+
+Le scanner est `SonarSource/sonarqube-scan-action` `v8.5.0` dans `sonarqube.yml`, pin `ci-v1.0.24`. Ce tag commente les pull requests. `ci-v1.0.23` n’analyse que `main`.
+
+Organisation GitHub `Deepidoo-s-new-age` :
+
+| Nom | Sorte | Valeur |
+|---|---|---|
+| `SONAR_TOKEN` | secret Actions | Jeton Global Analysis Token dans l’UI SonarQube (My Account → Security), créé après la première connexion |
+| `SONAR_HOST_URL` | variable Actions | `http://sonarqube.51.178.114.227.sslip.io` |
+
+Première connexion : `admin` / `admin`. SonarQube exige ensuite un nouveau mot de passe. Ce mot de passe n’est pas dans git. Le mot de passe de base dans le chart est le placeholder inerte `sonar`.
 
 ## Contraintes
 
