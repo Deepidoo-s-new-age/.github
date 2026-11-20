@@ -6,7 +6,8 @@ Canonical implementations: **`auth-service`** (profile A), **`platform-api`** (p
 
 | Path | Purpose |
 |---|---|
-| `.github/workflows/ci.yml` | `python-service`, `architecture`, `security`, `vue-app`, `image`, `vue-image` (`clone_deesplay`, `mount_secret: false`), `promote` |
+| `.github/workflows/ci.yml` | `python-service`, `sonarqube` (`ci-v1.0.24`), `architecture`, `security`, `vue-app`, `image`, `vue-image` (`clone_deesplay`, `mount_secret: false`), `promote` |
+| `sonar-project.properties` | Repository root. `projectKey` `auth-service`. Sources `backend/app,frontend/src`. Coverage `backend/coverage.xml`. `sonar` `working_directory` is `backend` |
 | `.github/workflows/preview.yml` | Thin caller → `ci-workflows` `preview.yml` (`ci-v1.0.14`); PR label `preview` → GHCR `:sha` |
 | `backend/pyproject.toml` | `deepilot`, contracts git pin, ruff, import-linter |
 | `backend/uv.lock` | Frozen deps |
@@ -25,6 +26,7 @@ Canonical implementations: **`auth-service`** (profile A), **`platform-api`** (p
 ### `ci.yml` job graph (auth-service)
 
 ```
+test ──► sonar (pull request comment; not a merge gate)
 test ──┐
 arch ──┼──► backend-image ──┐
 sec ───┤                     ├──► promote (main only)
@@ -47,7 +49,8 @@ Branch: `promote/auth-service`.
 
 | Path | Notes |
 |---|---|
-| `.github/workflows/ci.yml` | No `web` / `frontend-image`; `working_directory: .`; single promote |
+| `.github/workflows/ci.yml` | No `web` / `frontend-image`; `working_directory: .`; `sonar` `working_directory: .`; single promote |
+| `sonar-project.properties` | Repository root. `projectKey` `platform-api`. Sources `app`. Coverage `coverage.xml` |
 | `app/main.py` | Same deepilot pattern |
 | `Dockerfile` | Context repo root; same Python base and `uv` uninstall as auth-service |
 | Promote file | `environments/preproduction/platform-api-backend.values.yaml` |
@@ -62,12 +65,14 @@ Clone `https://github.com/Deepidoo-s-new-age/ci-workflows.git` beside the servic
 | Component | Tag |
 |---|---|
 | `image.yml`, `vue-image.yml` | `ci-v1.0.21` |
+| `sonarqube.yml` | `ci-v1.0.24` |
 | Every other reusable workflow | `ci-v1.0.14` |
 
 `ci-v1.0.21` runs Trivy (fixed HIGH/CRITICAL only), syft, and cosign inside the image job. Callers grant `id-token: write` on that job. Do not pin `ci-v1.0.15`–`ci-v1.0.20` on new image jobs: those tags either resolve the composite action in the caller repository or download syft/Trivy releases that 404.
 
 Examples to copy before customization:
 
+- `ci-workflows/examples/sonarqube.yml`
 - `ci-workflows/examples/python-service.yml`
 - `ci-workflows/examples/architecture.yml`
 - `ci-workflows/examples/security.yml`
@@ -168,7 +173,9 @@ If the module is **`design_mode: frontend_only`**, stop before phases 1–4 (bac
 
 ```markdown
 ### CI/CD wiring
-- [ ] image `uses:` pins `ci-v1.0.21`; every other `uses:` pins `ci-v1.0.14`
+- [ ] image `uses:` pins `ci-v1.0.21`; `sonarqube.yml` pins `ci-v1.0.24`; every other `uses:` pins `ci-v1.0.14`
+- [ ] `sonar` needs `test`, grants `pull-requests: write`, passes `vars.SONAR_HOST_URL` and `secrets.SONAR_TOKEN`, and is not a merge gate
+- [ ] `sonar-project.properties` is at the repository root; `working_directory` matches the coverage path (`.` or `backend`)
 - [ ] image jobs grant `id-token: write`; Dockerfile upgrades OS packages and does not leave `uv` installed
 - [ ] `design_mode` is not `frontend_only`
 - [ ] deepilot git tag `v0.1.7` (or newer) + install() in main

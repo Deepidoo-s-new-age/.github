@@ -12,13 +12,13 @@ Some people want one screen for “how is this repo?” across services. The pul
 
 ## How we use it
 
-Community Build is free to self-host. One server in the `sonarqube` namespace, its own Postgres, chart `helm-charts/charts/sonarqube`. The scanner is `ci-workflows` `sonarqube.yml`, called on `main` after tests. `auth-service` and `platform-api` call it. Each repo has `sonar-project.properties` and one Sonar project. The job imports `coverage.xml`. `sonar.qualitygate.wait` is false, so a red Sonar gate does not fail the job and does not block merge. GitHub checks do. The job is not in the image or promote `needs` list.
+Community Build is free to self-host. One server in the `sonarqube` namespace, its own Postgres, chart `helm-charts/charts/sonarqube`. The scanner is `ci-workflows` `sonarqube.yml`, called after tests on a pull request and on `main`. `auth-service` and `platform-api` call it. Each repo has `sonar-project.properties`. The `main` project stays the `main` branch. A pull request is scanned as `<projectKey>-pull-request` and the job comments the measures on the pull request. The job imports `coverage.xml`. `sonar.qualitygate.wait` is false, so a red Sonar gate does not fail the job and does not block merge. GitHub checks do. The job is not in the image or promote `needs` list.
 
 ## Installation
 
 The server is `sonarqube:26.11.0.134175-community` plus `charts/postgres` release `sonarqube-postgres` (database `sonar`), both in the `sonarqube` namespace. Argo CD applications `sonarqube-postgres` and `sonarqube`. The debug URL is `http://sonarqube.51.178.114.227.sslip.io`.
 
-The scanner is `SonarSource/sonarqube-scan-action` `v8.5.0` in `sonarqube.yml`, pin `ci-v1.0.23` after **Actions → Tag ci release** on `ci-workflows` `main`.
+The scanner is `SonarSource/sonarqube-scan-action` `v8.5.0` in `sonarqube.yml`, pin `ci-v1.0.24`. That tag comments on pull requests. `ci-v1.0.23` scans `main` only.
 
 GitHub organization `Deepidoo-s-new-age`:
 
@@ -31,7 +31,7 @@ First UI login is `admin` / `admin`. SonarQube then requires a new password. Tha
 
 ## Constraints
 
-Community Build analyzes the main branch. Pull-request analysis and decoration are a paid edition. It runs one analysis at a time, so many repos finishing together will queue. It needs its own Postgres and upgrades. Its security rules are shallower than Semgrep, and it does not do the cross-file taint analysis people expect from a paid SAST tool. Do not make it the OWASP scanner.
+Community Build keeps one branch per project, so a pull request is not written into the main project. Diff decoration is a paid edition. The scanner job posts its own comment. It runs one analysis at a time, so many repos finishing together will queue. It needs its own Postgres and upgrades. Its security rules are shallower than Semgrep, and it does not do the cross-file taint analysis people expect from a paid SAST tool. Do not make it the OWASP scanner.
 
 ## Pros
 

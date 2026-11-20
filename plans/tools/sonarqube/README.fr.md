@@ -12,13 +12,13 @@ Certains veulent un écran pour « comment va ce dépôt ? » à travers les ser
 
 ## Comment on l’utilise
 
-Community Build est gratuit à auto-héberger. Un serveur dans le namespace `sonarqube`, son propre Postgres, chart `helm-charts/charts/sonarqube`. Le scanner est `sonarqube.yml` dans `ci-workflows`, appelé sur `main` après les tests. `auth-service` et `platform-api` l’appellent. Chaque dépôt a `sonar-project.properties` et un projet Sonar. Le job importe `coverage.xml`. `sonar.qualitygate.wait` est faux : un gate Sonar rouge ne fait pas échouer le job et ne bloque pas le merge. Les checks GitHub le font. Le job n’est pas dans les `needs` de l’image ni de la promotion.
+Community Build est gratuit à auto-héberger. Un serveur dans le namespace `sonarqube`, son propre Postgres, chart `helm-charts/charts/sonarqube`. Le scanner est `sonarqube.yml` dans `ci-workflows`, appelé après les tests sur une pull request et sur `main`. `auth-service` et `platform-api` l’appellent. Chaque dépôt a `sonar-project.properties`. Le projet `main` reste la branche `main`. Une pull request est analysée sous `<projectKey>-pull-request` et le job commente les mesures sur la pull request. Le job importe `coverage.xml`. `sonar.qualitygate.wait` est faux : un gate Sonar rouge ne fait pas échouer le job et ne bloque pas le merge. Les checks GitHub le font. Le job n’est pas dans les `needs` de l’image ni de la promotion.
 
 ## Installation
 
 Le serveur est `sonarqube:26.11.0.134175-community` plus la release `sonarqube-postgres` du chart `charts/postgres` (base `sonar`), tous deux dans le namespace `sonarqube`. Applications Argo CD `sonarqube-postgres` et `sonarqube`. L’URL de debug est `http://sonarqube.51.178.114.227.sslip.io`.
 
-Le scanner est `SonarSource/sonarqube-scan-action` `v8.5.0` dans `sonarqube.yml`, pin `ci-v1.0.23` après **Actions → Tag ci release** sur `main` de `ci-workflows`.
+Le scanner est `SonarSource/sonarqube-scan-action` `v8.5.0` dans `sonarqube.yml`, pin `ci-v1.0.24`. Ce tag commente les pull requests. `ci-v1.0.23` n’analyse que `main`.
 
 Organisation GitHub `Deepidoo-s-new-age` :
 
@@ -31,7 +31,7 @@ Première connexion : `admin` / `admin`. SonarQube exige ensuite un nouveau mot 
 
 ## Contraintes
 
-Community Build analyse la branche main. L’analyse et la décoration de pull request sont une édition payante. Il lance une analyse à la fois, donc beaucoup de dépôts qui finissent ensemble feront la queue. Il lui faut son propre Postgres et des mises à jour. Ses règles de sécurité sont moins profondes que Semgrep, et il ne fait pas l’analyse de taint inter-fichiers qu’on attend d’un outil SAST payant. On n’en fait pas le scanner OWASP.
+Community Build garde une branche par projet, donc une pull request n’est pas écrite dans le projet `main`. La décoration du diff est une édition payante. Le job du scanner poste son propre commentaire. Il lance une analyse à la fois, donc beaucoup de dépôts qui finissent ensemble feront la queue. Il lui faut son propre Postgres et des mises à jour. Ses règles de sécurité sont moins profondes que Semgrep, et il ne fait pas l’analyse de taint inter-fichiers qu’on attend d’un outil SAST payant. On n’en fait pas le scanner OWASP.
 
 ## Avantages
 
