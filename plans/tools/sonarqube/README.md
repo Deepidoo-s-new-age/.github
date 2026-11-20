@@ -12,11 +12,22 @@ Some people want one screen for “how is this repo?” across services. The pul
 
 ## How we use it
 
-Only if the team still wants that screen. Community Build is free to self-host. Point the scanner at `main` after tests and import `coverage.xml`. One project per repo. A red Sonar gate does not block merge. GitHub checks do.
+Community Build is free to self-host. One server in the `sonarqube` namespace, its own Postgres, chart `helm-charts/charts/sonarqube`. The scanner is `ci-workflows` `sonarqube.yml`, called on `main` after tests. `auth-service` and `platform-api` call it. Each repo has `sonar-project.properties` and one Sonar project. The job imports `coverage.xml`. `sonar.qualitygate.wait` is false, so a red Sonar gate does not fail the job and does not block merge. GitHub checks do. The job is not in the image or promote `needs` list.
 
 ## Installation
 
-Optional. Community Build is a self-hosted server, its Helm chart or container, with its own Postgres. The scanner is a CI step on `main`, the scanner CLI or the official Action, and it imports `coverage.xml` from the test job.
+The server is `sonarqube:26.11.0.134175-community` plus `charts/postgres` release `sonarqube-postgres` (database `sonar`), both in the `sonarqube` namespace. Argo CD applications `sonarqube-postgres` and `sonarqube`. The debug URL is `http://sonarqube.51.178.114.227.sslip.io`.
+
+The scanner is `SonarSource/sonarqube-scan-action` `v8.5.0` in `sonarqube.yml`, pin `ci-v1.0.23` after **Actions → Tag ci release** on `ci-workflows` `main`.
+
+GitHub organization `Deepidoo-s-new-age`:
+
+| Name | Kind | Value |
+|---|---|---|
+| `SONAR_TOKEN` | Actions secret | Global Analysis Token from the SonarQube UI (My Account → Security), created after the first login |
+| `SONAR_HOST_URL` | Actions variable | `http://sonarqube.51.178.114.227.sslip.io` |
+
+First UI login is `admin` / `admin`. SonarQube then requires a new password. That password is not stored in git. The chart database password is the inert placeholder `sonar`.
 
 ## Constraints
 
