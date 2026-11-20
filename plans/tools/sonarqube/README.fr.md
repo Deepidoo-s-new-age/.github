@@ -12,7 +12,7 @@ Certains veulent un écran pour « comment va ce dépôt ? » à travers les ser
 
 ## Comment on l’utilise
 
-Seulement si l’équipe veut encore cet écran. Community Build est gratuit à auto-héberger. Pointer le scanner sur `main` après les tests et importer `coverage.xml`. Un projet par dépôt. Un gate Sonar rouge ne bloque pas le merge. Les checks GitHub le font.
+Seulement si l’équipe veut encore cet écran. Community Build est gratuit à auto-héberger. Pointer le scanner sur `main` après les tests et importer `coverage.xml`. Un projet par dépôt porte `main`. Une pull request est analysée sous `<projectKey>-pull-request` et le job commente les mesures sur la pull request. Un gate Sonar rouge ne bloque pas le merge. Les checks GitHub le font.
 
 ## Installation
 
@@ -20,7 +20,7 @@ Optionnel. Community Build est un serveur auto-hébergé, son chart Helm ou son 
 
 ## Contraintes
 
-Community Build analyse la branche main. L’analyse et la décoration de pull request sont une édition payante. Il lance une analyse à la fois, donc beaucoup de dépôts qui finissent ensemble feront la queue. Il lui faut son propre Postgres et des mises à jour. Ses règles de sécurité sont moins profondes que Semgrep, et il ne fait pas l’analyse de taint inter-fichiers qu’on attend d’un outil SAST payant. On n’en fait pas le scanner OWASP.
+Community Build garde une branche par projet, donc une pull request n’est pas écrite dans le projet `main`. La décoration du diff est une édition payante. Le job du scanner poste son propre commentaire. Il lance une analyse à la fois, donc beaucoup de dépôts qui finissent ensemble feront la queue. Il lui faut son propre Postgres et des mises à jour. Ses règles de sécurité sont moins profondes que Semgrep, et il ne fait pas l’analyse de taint inter-fichiers qu’on attend d’un outil SAST payant. On n’en fait pas le scanner OWASP.
 
 ## Avantages
 

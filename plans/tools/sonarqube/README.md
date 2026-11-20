@@ -12,7 +12,7 @@ Some people want one screen for “how is this repo?” across services. The pul
 
 ## How we use it
 
-Only if the team still wants that screen. Community Build is free to self-host. Point the scanner at `main` after tests and import `coverage.xml`. One project per repo. A red Sonar gate does not block merge. GitHub checks do.
+Only if the team still wants that screen. Community Build is free to self-host. Point the scanner at `main` after tests and import `coverage.xml`. One project per repo holds `main`. A pull request is scanned as `<projectKey>-pull-request` and the job comments the measures on the pull request. A red Sonar gate does not block merge. GitHub checks do.
 
 ## Installation
 
@@ -20,7 +20,7 @@ Optional. Community Build is a self-hosted server, its Helm chart or container, 
 
 ## Constraints
 
-Community Build analyzes the main branch. Pull-request analysis and decoration are a paid edition. It runs one analysis at a time, so many repos finishing together will queue. It needs its own Postgres and upgrades. Its security rules are shallower than Semgrep, and it does not do the cross-file taint analysis people expect from a paid SAST tool. Do not make it the OWASP scanner.
+Community Build keeps one branch per project, so a pull request is not written into the main project. Diff decoration is a paid edition. The scanner job posts its own comment. It runs one analysis at a time, so many repos finishing together will queue. It needs its own Postgres and upgrades. Its security rules are shallower than Semgrep, and it does not do the cross-file taint analysis people expect from a paid SAST tool. Do not make it the OWASP scanner.
 
 ## Pros
 
