@@ -35,7 +35,7 @@ Previews use **`ci-workflows` `preview.yml`** (pin **`ci-v1.0.14`**); promote re
 ## Hard rules
 
 1. Organization **`Deepidoo-s-new-age`** only — reusable workflows refuse other owners.
-2. Pin the tag from the table in phase 3 — never `@main`, and never an older `ci-v1.0.*` tag copied from history. Image jobs are **`ci-v1.0.21`**; every other reusable workflow stays **`ci-v1.0.14`**. The tag is created on `ci-workflows` `main` with **Actions → Tag ci release** after that commit merges. A caller that names the tag fails until the tag exists.
+2. Pin the tag from the table in phase 3 — never `@main`, and never an older `ci-v1.0.*` tag copied from history. Image jobs are **`ci-v1.0.21`**. `sonarqube.yml` is **`ci-v1.0.24`**. Every other reusable workflow stays **`ci-v1.0.14`**. The tag is created on `ci-workflows` `main` with **Actions → Tag ci release** after that commit merges. A caller that names the tag fails until the tag exists.
 3. **`deepilot`** git tag **`v0.1.7`** (or newer) in `[project].dependencies`, not dev-only. `0.1.6` crashes when `httpx` is absent. CI runs `python -m deepilot.probe`.
 4. **`deepidoo-contracts`** git tag is the tag on `auth-service` `main` today (`v0.2.0`). Do not copy `v0.1.0` from old progress notes.
 5. **`docs/module.yaml`** filled for business modules; architecture job compares routes. If `design_mode: frontend_only`, stop. Do not add backend, images, or Helm until the user clears that flag.
@@ -107,6 +107,15 @@ Collect and fix in the synthesis before editing:
 
 The same token value may be stored on each module repository. One missing secret fails the jobs in that row only.
 
+**SonarQube is organization-wide.** Do not create a token per module. Do not store the host or the token in the module repository, and do not paste the token into chat.
+
+| Name | Kind | Value |
+|---|---|---|
+| `SONAR_TOKEN` | organization Actions **secret** | Global Analysis Token from the SonarQube UI (My Account → Security). Callers pass `secrets.SONAR_TOKEN`. The token must be allowed to create a project, which is how the first `main` scan provisions `sonar.projectKey`. |
+| `SONAR_HOST_URL` | organization Actions **variable**, not a secret | `http://sonarqube.51.178.114.227.sslip.io`. Callers pass `vars.SONAR_HOST_URL`. |
+
+If the first scan says `SONAR_TOKEN` or `SONAR_HOST_URL` is empty, the organization secret or variable is not granted to that repository. Ask the user to allow the repository on the organization secret and variable. Do not create a second token.
+
 ---
 
 ## Phase 1 — Python / uv baseline (if API)
@@ -150,6 +159,7 @@ Clone `ci-workflows` when it is not next to the service repo. When the clone exi
 | `architecture` | `architecture.yml` | `ci-v1.0.14` |
 | `security` | `security.yml` | `ci-v1.0.14` |
 | `web` (Vue) | `vue-app.yml` | `ci-v1.0.14` |
+| `sonar` | `sonarqube.yml` | `ci-v1.0.24` |
 | `backend-image` | `image.yml` | `ci-v1.0.21` |
 | `frontend-image` | `vue-image.yml` | `ci-v1.0.21` |
 | `preview` | `preview.yml` | `ci-v1.0.14` |
@@ -164,7 +174,44 @@ Clone `ci-workflows` when it is not next to the service repo. When the clone exi
 - `coverage_source: app` when ratchet is ready
 - `telemetry_app`: `app.main:app` if layout differs
 
-Grant job permissions: `test` → `actions: write`; image jobs → `contents: read`, `packages: write`, and `id-token: write` (cosign on `main`); `web` → `packages: read`. GitHub keeps the intersection of the caller permissions and the called workflow. Missing `id-token: write` makes the sign step fail after a successful push.
+Grant job permissions: `test` → `actions: write`; `sonar` → `contents: read`, `actions: read`, and `pull-requests: write`; image jobs → `contents: read`, `packages: write`, and `id-token: write` (cosign on `main`); `web` → `packages: read`. GitHub keeps the intersection of the caller permissions and the called workflow. Missing `id-token: write` makes the sign step fail after a successful push. Missing `pull-requests: write` on `sonar` makes the comment step fail after a successful scan.
+
+### SonarQube
+
+Copy the `sonar` job from `ci-workflows/examples/sonarqube.yml`. It `needs: test` because it downloads the `coverage` artifact from that job. Do not add `sonar` to the `needs` list of `backend-image`, `frontend-image`, or promote. A red quality gate does not fail the job and does not block merge.
+
+```yaml
+  sonar:
+    needs: test
+    permissions:
+      contents: read
+      actions: read
+      pull-requests: write
+    uses: Deepidoo-s-new-age/ci-workflows/.github/workflows/sonarqube.yml@ci-v1.0.24
+    with:
+      working_directory: backend
+      sonar_host_url: ${{ vars.SONAR_HOST_URL }}
+    secrets:
+      sonar_token: ${{ secrets.SONAR_TOKEN }}
+```
+
+`working_directory` is the directory whose pytest `coverage.xml` is imported. Use `backend` when the API lives under `backend/` (auth-service). Use `.` when the API is the repository root (platform-api).
+
+Commit `sonar-project.properties` at the **repository root**. The job looks for that file there, not inside `working_directory`.
+
+| Property | Rule |
+|---|---|
+| `sonar.projectKey` | One token, no spaces. The repository name (`auth-service`, `platform-api`). This is the `main` project. |
+| `sonar.projectName` | Same display name as the key. |
+| `sonar.sources` | Paths from the repository root. auth-service: `backend/app,frontend/src`. platform-api: `app`. |
+| `sonar.tests` | Test directory. auth-service: `backend/tests`. platform-api: `tests`. |
+| `sonar.python.coverage.reportPaths` | `coverage.xml` when `working_directory` is `.`. `backend/coverage.xml` when it is `backend`. The workflow prefixes class filenames in that report so they match `sonar.sources`. |
+| `sonar.python.version` | `3.12` |
+| `sonar.exclusions` | Caches and build output: `__pycache__`, `.venv`, `node_modules`, `dist`, `.ruff_cache`, `htmlcov`. |
+
+On a push to `main`, the scan updates `sonar.projectKey`. On a pull request, the scan uses `<projectKey>-pull-request` so the `main` project is not replaced. Community Build keeps one branch per project. After the server accepts the report, the job posts or updates one pull request comment: quality gate, bugs, vulnerabilities, security hotspots, code smells, coverage, duplication, and the dashboard link. The check summary shows the same text. The dashboard link shows whichever pull request was scanned last. The table is the commit that posted it.
+
+Do not set `sonar.qualitygate.wait=true`. Do not fail the caller when the gate is red. A missing `SONAR_HOST_URL`, `SONAR_TOKEN`, or `sonar-project.properties` fails the job. A compute-engine failure fails the job, because then there is no report to comment. The server is one Community Build for the cluster (`http://sonarqube.51.178.114.227.sslip.io`); it is not installed per environment.
 
 **Promote job:** copy from reference; set branch `promote/<service>`, values paths, and `HELM_CHARTS_TOKEN` script. Profile A updates **two** digest files; B updates one.
 
@@ -289,6 +336,7 @@ Run **`add-compose-service`** to add API/UI to `.github/local/docker-compose.yml
 | Check | How |
 |---|---|
 | CI green on PR | All reusable jobs pass, including Telemetry. Every image `main` publishes was built on the PR (`push: false`) |
+| SonarQube comment | The pull request has one SonarQube comment after `sonar`. A red quality gate still leaves that job green |
 | Preview label | API-only **Run workflow** adds the `preview` label |
 | Image on `main` | GHCR tag = git sha |
 | Promote PR | Opened in `helm-charts` with digest |
