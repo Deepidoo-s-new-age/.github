@@ -373,7 +373,9 @@ services:
       - traefik.http.routers.monitor.entrypoints=web
       - traefik.http.services.monitor.loadbalancer.server.port=8000
 
-  # messaging — UI Vite (proxy / vers l’API). Pas de hostname séparé pour l’API.
+  # messaging — UI Vite (proxy /api vers l’API). Pas de hostname séparé pour l’API.
+  # Dockerfile.dev réécrit les tags git vers /src/contracts et /src/deepilot.
+  # BUFFER_MODE reste false : pas de worker Celery dans ce stack.
   messaging-api:
     profiles: ["messaging", "apps", "full"]
     container_name: na-messaging-api
@@ -382,30 +384,45 @@ services:
     build:
       context: ../../messaging/backend
       dockerfile: Dockerfile.dev
-      additional_contexts:
-        contracts: ../../contracts
     volumes:
-      - ../../messaging/backend:/src/messaging/backend
-      - ../../contracts:/src/deepidoo-contracts
+      - ../../messaging/backend/app:/src/messaging/backend/app
+      - ../../contracts:/src/contracts
+      - ../../deepilot:/src/deepilot
       - na_messaging_venv:/src/messaging/backend/.venv
+      - na_messaging_data:/src/messaging/backend/data_storage
     environment:
-      REDIS_URL: ${REDIS_URL:-redis://redis:6379/14}
+      AUTH_REDIS_URL: ${REDIS_URL:-redis://redis:6379/14}
       AUTH_SERVICE_URL: ${AUTH_SERVICE_URL:-http://auth-service:8000}
       PLATFORM_API_URL: ${PLATFORM_API_URL:-http://platform-api:8000}
       JWT_SECRET: ${JWT_SECRET:-change-me}
       JWT_ISSUER: ${JWT_ISSUER:-deepidoo-auth}
       AUTH_SKIP_JTI_CHECK: ${MESSAGING_AUTH_SKIP_JTI_CHECK:-true}
+      MODULE_CLIENT_ID: ${MESSAGING_MODULE_CLIENT_ID:-messaging}
+      MODULE_CLIENT_SECRET: ${MESSAGING_MODULE_CLIENT_SECRET:-changeme-dev-only}
       CORS_ORIGINS: ${MESSAGING_CORS_ORIGINS:-http://localhost:5177,http://127.0.0.1:5177,http://messaging.new-age.me}
       MESSAGING_ADMIN_ORGANISATION_IDS: ${MESSAGING_ADMIN_ORGANISATION_IDS:-1}
       MESSAGING_CATALOG_DIR: ${MESSAGING_CATALOG_DIR:-data_storage/catalog}
       MESSAGING_DUCKDB_PATH: ${MESSAGING_DUCKDB_PATH:-data_storage/messaging_history.duckdb}
-      MODULE_CLIENT_SECRET: ${MESSAGING_MODULE_CLIENT_SECRET:-change-me}
-      SMTP_DEV_LOCAL_MODE: ${SMTP_DEV_LOCAL_MODE:-true}
+      DEV_LOCAL_MODE: ${MESSAGING_DEV_LOCAL_MODE:-true}
+      BUFFER_MODE: "false"
       SMTP_SERVER_ADDRESS: ${SMTP_SERVER_ADDRESS:-mailcatcher}
       SMTP_PORT: ${SMTP_PORT:-1025}
       SMTP_USERNAME: ${SMTP_USERNAME:-}
       SMTP_PASSWORD: ${SMTP_PASSWORD:-}
       SMTP_EXPEDITOR_ADDRESS: ${SMTP_EXPEDITOR_ADDRESS:-devs@deepidoo.com}
+      STATUS_CALLBACK_URL: ${MESSAGING_STATUS_CALLBACK_URL:-http://messaging-api:8000/api/v1/send/status_callback}
+      TWILIO_MESSAGE_SERVICE_SID: ${TWILIO_MESSAGE_SERVICE_SID:-changeme}
+      TWILIO_ACCOUNT_SID: ${TWILIO_ACCOUNT_SID:-changeme}
+      TWILIO_API_KEY_SID: ${TWILIO_API_KEY_SID:-changeme}
+      TWILIO_API_KEY_SECRET: ${TWILIO_API_KEY_SECRET:-secret}
+      TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN:-secret}
+      DEEPILOT_SERVICE_NAME: ${DEEPILOT_MESSAGING_SERVICE_NAME:-messaging}
+      DEEPILOT_ENVIRONMENT: ${DEEPILOT_ENVIRONMENT:-local}
+      DEEPILOT_TEMPO_ENDPOINT: ${DEEPILOT_TEMPO_ENDPOINT:-http://tempo:4318}
+      DEEPILOT_LOKI_ENDPOINT: ${DEEPILOT_LOKI_ENDPOINT:-http://loki:3100/otlp}
+      DEEPILOT_PROMETHEUS_ENDPOINT: ${DEEPILOT_PROMETHEUS_ENDPOINT:-http://prometheus:9090/api/v1/otlp}
+      DEV_UID: ${UID:-1000}
+      DEV_GID: ${GID:-1000}
     extra_hosts:
       - "host.docker.internal:host-gateway"
     depends_on:
@@ -423,14 +440,21 @@ services:
     build:
       context: ../../messaging/frontend-web
       dockerfile: Dockerfile.dev
-    working_dir: /app
+      secrets:
+        - node_auth_token
+    working_dir: /src/messager/messaging/frontend-web
     environment:
+      DEV_LOCAL_MODE: ${MESSAGING_DEV_LOCAL_MODE:-true}
+      NODE_AUTH_TOKEN: ${NODE_AUTH_TOKEN:-}
       VITE_API_PROXY_TARGET: http://messaging-api:8000
-      VITE_AUTH_SERVICE_URL: http://auth-service.new-age.me
+      VITE_AUTH_SERVICE_URL: http://auth-service.${NEW_AGE_DOMAIN:-new-age.me}
     volumes:
-      - ../../messaging/frontend-web:/app
-      - ../../deesplay:/deesplay
-      - na_messaging_node_modules:/app/node_modules
+      - ../../messaging/frontend-web:/src/messager/messaging/frontend-web
+      - na_messaging_node_modules:/src/messager/messaging/frontend-web/node_modules
+    command:
+      - sh
+      - -c
+      - npm config set //npm.pkg.github.com/:_authToken "$$NODE_AUTH_TOKEN" && npm ci && npm run dev -- --host 0.0.0.0 --port 5177
     ports:
       - "${MESSAGING_WEB_HOST_PORT:-5177}:5177"
     depends_on:
@@ -1098,6 +1122,7 @@ volumes:
   na_prometheus:
   na_grafana:
   na_messaging_venv:
+  na_messaging_data:
   na_messaging_node_modules:
   na_deepipush_pg:
   na_deepivoice_data:
@@ -1119,3 +1144,7 @@ volumes:
 networks:
   na:
     name: na-network
+
+secrets:
+  node_auth_token:
+    environment: NODE_AUTH_TOKEN
